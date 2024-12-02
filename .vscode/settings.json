@@ -1,3 +1,13 @@
 {
-  "cSpell.words": ["oxphys", "pybindings"]
+  "cSpell.words": [
+    "Brearton",
+    "cdylib",
+    "maturin",
+    "oxphys",
+    "pybindings",
+    "pyfunction",
+    "pymodule",
+    "sdist",
+    "venv"
+  ]
 }
