@@ -1,0 +1,17 @@
+[project]
+name = "oxphys-numerics"
+version = "0.1.0"
+description = "The python interface for the oxphys-numerics library"
+readme = "README.md"
+authors = [
+    { name = "Richard Brearton", email = "richard.brearton@physics.ox.ac.uk" },
+]
+requires-python = ">=3.13"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = ["maturin>=1.7.7"]
