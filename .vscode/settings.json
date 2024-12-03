@@ -2,6 +2,7 @@
   "cSpell.words": [
     "Brearton",
     "cdylib",
+    "dataframes",
     "maturin",
     "oxphys",
     "pybindings",
@@ -9,5 +10,6 @@
     "pymodule",
     "sdist",
     "venv"
-  ]
+  ],
+  "editor.rulers": [100]
 }
