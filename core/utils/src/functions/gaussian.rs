@@ -2,7 +2,7 @@
 /// This function takes in the x-coordinate, the mean, the standard deviation, and an optional
 /// prefactor. If the prefactor is not provided, the function will, by default, make sure that the
 /// Gaussian is normalized.
-pub fn gaussian(x_coords: f64, mean: f64, std_dev: f64, prefactor: Option<f64>) -> f64 {
+pub fn gaussian(x_coord: f64, mean: f64, std_dev: f64, prefactor: Option<f64>) -> f64 {
     // Check to see if we were given the prefactor.
     let prefactor = match prefactor {
         Some(value) => value,
@@ -10,6 +10,6 @@ pub fn gaussian(x_coords: f64, mean: f64, std_dev: f64, prefactor: Option<f64>) 
     };
 
     // Evaluate the Gaussian, multiplying by the appropriate prefactor.
-    let b = -0.5 * ((x_coords - mean) / std_dev).powi(2);
+    let b = -0.5 * ((x_coord - mean) / std_dev).powi(2);
     prefactor * b.exp()
 }
