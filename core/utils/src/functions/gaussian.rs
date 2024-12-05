@@ -11,6 +11,6 @@ pub fn gaussian(x_coord: f64, mean: f64, std_dev: f64, prefactor: Option<f64>) -
     };
 
     // Evaluate the Gaussian, multiplying by the appropriate prefactor.
-    let b = -0.5 * ((x_coord - mean) / std_dev).powi(2);
-    prefactor * b.exp()
+    let exponential_argument = -0.5 * ((x_coord - mean) / std_dev).powi(2);
+    prefactor * exponential_argument.exp()
 }
