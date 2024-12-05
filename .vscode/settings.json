@@ -5,6 +5,7 @@
     "dataframes",
     "maturin",
     "oxphys",
+    "prefactor",
     "pybindings",
     "pyfunction",
     "pymodule",
