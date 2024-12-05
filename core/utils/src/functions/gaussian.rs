@@ -1,3 +1,4 @@
+/// # Gaussian function
 /// An implementation of a simple Gaussian function.
 /// This function takes in the x-coordinate, the mean, the standard deviation, and an optional
 /// prefactor. If the prefactor is not provided, the function will, by default, make sure that the
