@@ -1,15 +1,17 @@
 use crate::traits::expression::Expression;
 
+use super::expr::Expr;
+
 /// # BinaryNode
 /// A node that has exactly two child nodes.
-pub enum BinaryNode<E1: Expression, E2: Expression> {
-    Add(E1, E2),      // Binary operation: addition.
-    Multiply(E1, E2), // Binary operation: multiplication.
-    Pow(E1, E2),      // Binary operation: exponentiation.
-    Log(E1, E2),      // Binary operation: logarithm.
+pub enum BinaryNode {
+    Add(Box<Expr>, Box<Expr>),      // Binary operation: addition.
+    Multiply(Box<Expr>, Box<Expr>), // Binary operation: multiplication.
+    Pow(Box<Expr>, Box<Expr>),      // Binary operation: exponentiation.
+    Log(Box<Expr>, Box<Expr>),      // Binary operation: logarithm.
 }
 
-impl<E1: Expression, E2: Expression> Expression for BinaryNode<E1, E2> {
+impl Expression for BinaryNode {
     fn evaluate(
         &self,
         variables: &std::collections::HashMap<String, super::scalar_type::ScalarType>,
