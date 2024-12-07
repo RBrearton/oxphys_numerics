@@ -9,7 +9,7 @@ impl LengthMismatchError {
     /// Create a new LengthMismatchError.
     /// # Arguments
     /// * `map` - A mapping from variable names to their lengths.
-    pub(crate) fn new(map: HashMap<&str, u64>) -> LengthMismatchError {
+    pub(crate) fn new(map: HashMap<&str, usize>) -> LengthMismatchError {
         LengthMismatchError {
             details: format!(
                 "The lengths of the variables in the expression do not match: {:?}",
