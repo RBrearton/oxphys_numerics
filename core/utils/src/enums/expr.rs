@@ -50,3 +50,33 @@ impl Expr {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_evaluate() {
+        // Set up the variables hashmap.
+        let mut variables = HashMap::new();
+        variables.insert("x".to_string(), ScalarType::F64(2.0));
+
+        // f(x) = x + 1
+        let expr = Expr::Add(
+            Box::new(Expr::Variable("x".to_string())),
+            Box::new(Expr::Constant(ScalarType::F64(1.0))),
+        );
+        assert_eq!(expr.evaluate(&variables), ScalarType::F64(3.0));
+
+        // f(x) = x^2
+        let expr = Expr::Pow(
+            Box::new(Expr::Variable("x".to_string())),
+            Box::new(Expr::Constant(ScalarType::F64(2.0))),
+        );
+        assert_eq!(expr.evaluate(&variables), ScalarType::F64(4.0));
+
+        // f(x) = sin(x)
+        let expr = Expr::Sin(Box::new(Expr::Variable("x".to_string())));
+        assert_eq!(expr.evaluate(&variables), ScalarType::F64(2.0).sin());
+    }
+}
