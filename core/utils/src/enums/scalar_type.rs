@@ -5,6 +5,7 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 pub enum ScalarType {
     F64(f64),
     F32(f32),
+    None,
 }
 
 /// Create a macro to help implement the arithmetic traits for the ScalarType enum.
@@ -15,6 +16,10 @@ macro_rules! impl_arith_trait {
 
             fn $method(self, other: Self) -> Self {
                 match (self, other) {
+                    // If either value is None, return None.
+                    (ScalarType::None, _) | (_, ScalarType::None) => ScalarType::None,
+
+                    // If the types are the same, preserve the type.
                     (ScalarType::F64(left), ScalarType::F64(right)) => {
                         ScalarType::F64(left $op right)
                     }
@@ -58,6 +63,7 @@ impl Neg for ScalarType {
 
     fn neg(self) -> Self {
         match self {
+            ScalarType::None => ScalarType::None,
             ScalarType::F64(value) => ScalarType::F64(-value),
             ScalarType::F32(value) => ScalarType::F32(-value),
         }
@@ -68,8 +74,13 @@ impl Neg for ScalarType {
 impl ScalarType {
     pub fn powf(self, exponent: ScalarType) -> Self {
         match (self, exponent) {
+            // If either value is None, return None.
+            (ScalarType::None, _) | (_, ScalarType::None) => ScalarType::None,
+
+            // If the types are the same, preserve the type.
             (ScalarType::F64(base), ScalarType::F64(exp)) => ScalarType::F64(base.powf(exp)),
             (ScalarType::F32(base), ScalarType::F32(exp)) => ScalarType::F32(base.powf(exp)),
+
             // If the types are different, convert to the higher precision type.
             (ScalarType::F32(base), ScalarType::F64(exp)) => {
                 ScalarType::F64(f64::from(base).powf(exp))
@@ -82,6 +93,10 @@ impl ScalarType {
 
     pub fn sqrt(self) -> Self {
         match self {
+            // If the value is None, return None.
+            ScalarType::None => ScalarType::None,
+
+            // Otherwise, fallback to the inbuilt sqrt function.
             ScalarType::F64(value) => ScalarType::F64(value.sqrt()),
             ScalarType::F32(value) => ScalarType::F32(value.sqrt()),
         }
@@ -89,6 +104,10 @@ impl ScalarType {
 
     pub fn sin(self) -> Self {
         match self {
+            // If the value is None, return None.
+            ScalarType::None => ScalarType::None,
+
+            // Otherwise, fallback to the inbuilt sin function.
             ScalarType::F64(value) => ScalarType::F64(value.sin()),
             ScalarType::F32(value) => ScalarType::F32(value.sin()),
         }
@@ -96,6 +115,10 @@ impl ScalarType {
 
     pub fn cos(self) -> Self {
         match self {
+            // If the value is None, return None.
+            ScalarType::None => ScalarType::None,
+
+            // Otherwise, fallback to the inbuilt cos function.
             ScalarType::F64(value) => ScalarType::F64(value.cos()),
             ScalarType::F32(value) => ScalarType::F32(value.cos()),
         }
@@ -103,6 +126,10 @@ impl ScalarType {
 
     pub fn exp(self) -> Self {
         match self {
+            // If the value is None, return None.
+            ScalarType::None => ScalarType::None,
+
+            // Otherwise, fallback to the inbuilt exp function.
             ScalarType::F64(value) => ScalarType::F64(value.exp()),
             ScalarType::F32(value) => ScalarType::F32(value.exp()),
         }
@@ -110,8 +137,13 @@ impl ScalarType {
 
     pub fn log(self, base: Self) -> Self {
         match (self, base) {
+            // If either value is None, return None.
+            (ScalarType::None, _) | (_, ScalarType::None) => ScalarType::None,
+
+            // If the types are the same, preserve the type.
             (ScalarType::F64(inner), ScalarType::F64(base)) => ScalarType::F64(inner.log(base)),
             (ScalarType::F32(inner), ScalarType::F32(base)) => ScalarType::F32(inner.log(base)),
+
             // If the types are different, convert to the higher precision type.
             (ScalarType::F32(inner), ScalarType::F64(base)) => {
                 ScalarType::F64(f64::from(inner).log(base))
@@ -124,6 +156,10 @@ impl ScalarType {
 
     pub fn ln(self) -> Self {
         match self {
+            // If the value is None, return None.
+            ScalarType::None => ScalarType::None,
+
+            // Otherwise, fallback to the inbuilt ln function.
             ScalarType::F64(value) => ScalarType::F64(value.ln()),
             ScalarType::F32(value) => ScalarType::F32(value.ln()),
         }
@@ -131,6 +167,10 @@ impl ScalarType {
 
     pub fn abs(self) -> Self {
         match self {
+            // If the value is None, return None.
+            ScalarType::None => ScalarType::None,
+
+            // Otherwise, fallback to the inbuilt abs function.
             ScalarType::F64(value) => ScalarType::F64(value.abs()),
             ScalarType::F32(value) => ScalarType::F32(value.abs()),
         }
@@ -160,6 +200,9 @@ mod tests {
             ScalarType::F64(1.0) + ScalarType::F32(2.0),
             ScalarType::F64(3.0)
         );
+
+        // Test addition with None.
+        assert_eq!(ScalarType::None + ScalarType::F64(1.0), ScalarType::None);
     }
 
     #[test]
@@ -180,6 +223,9 @@ mod tests {
             ScalarType::F64(5.0) - ScalarType::F32(3.0),
             ScalarType::F64(2.0)
         );
+
+        // Test subtraction with None.
+        assert_eq!(ScalarType::None - ScalarType::F64(1.0), ScalarType::None);
     }
 
     #[test]
@@ -200,6 +246,9 @@ mod tests {
             ScalarType::F64(2.0) * ScalarType::F32(3.0),
             ScalarType::F64(6.0)
         );
+
+        // Test multiplication with None.
+        assert_eq!(ScalarType::None * ScalarType::F64(1.0), ScalarType::None);
     }
 
     #[test]
@@ -220,12 +269,18 @@ mod tests {
             ScalarType::F64(6.0) / ScalarType::F32(2.0),
             ScalarType::F64(3.0)
         );
+
+        // Test division with None.
+        assert_eq!(ScalarType::None / ScalarType::F64(1.0), ScalarType::None);
     }
 
     #[test]
     fn test_neg() {
         assert_eq!(-ScalarType::F64(1.0), ScalarType::F64(-1.0));
         assert_eq!(-ScalarType::F32(1.0), ScalarType::F32(-1.0));
+
+        // Test negation with None.
+        assert_eq!(-ScalarType::None, ScalarType::None);
     }
 
     #[test]
@@ -246,12 +301,21 @@ mod tests {
             ScalarType::F64(2.0).powf(ScalarType::F32(3.0)),
             ScalarType::F64(8.0)
         );
+
+        // Test powf with None.
+        assert_eq!(
+            ScalarType::None.powf(ScalarType::F64(1.0)),
+            ScalarType::None
+        );
     }
 
     #[test]
     fn test_sqrt() {
         assert_eq!(ScalarType::F64(4.0).sqrt(), ScalarType::F64(2.0));
         assert_eq!(ScalarType::F32(4.0).sqrt(), ScalarType::F32(2.0));
+
+        // Test sqrt with None.
+        assert_eq!(ScalarType::None.sqrt(), ScalarType::None);
     }
 
     #[test]
@@ -259,6 +323,9 @@ mod tests {
         // These tests are pretty weak.
         assert_eq!(ScalarType::F64(0.0).sin(), ScalarType::F64(0.0));
         assert_eq!(ScalarType::F32(0.0).sin(), ScalarType::F32(0.0));
+
+        // Test sin with None.
+        assert_eq!(ScalarType::None.sin(), ScalarType::None);
     }
 
     #[test]
@@ -266,6 +333,9 @@ mod tests {
         // These tests are pretty weak.
         assert_eq!(ScalarType::F64(0.0).cos(), ScalarType::F64(1.0));
         assert_eq!(ScalarType::F32(0.0).cos(), ScalarType::F32(1.0));
+
+        // Test cos with None.
+        assert_eq!(ScalarType::None.cos(), ScalarType::None);
     }
 
     #[test]
@@ -273,6 +343,9 @@ mod tests {
         // These tests are pretty weak.
         assert_eq!(ScalarType::F64(0.0).exp(), ScalarType::F64(1.0));
         assert_eq!(ScalarType::F32(0.0).exp(), ScalarType::F32(1.0));
+
+        // Test exp with None.
+        assert_eq!(ScalarType::None.exp(), ScalarType::None);
     }
 
     #[test]
@@ -293,6 +366,9 @@ mod tests {
             ScalarType::F64(8.0).log(ScalarType::F32(2.0)),
             ScalarType::F64(3.0)
         );
+
+        // Test log with None.
+        assert_eq!(ScalarType::None.log(ScalarType::F64(1.0)), ScalarType::None);
     }
 
     #[test]
@@ -300,6 +376,9 @@ mod tests {
         // These tests are pretty weak.
         assert_eq!(ScalarType::F64(1.0).ln(), ScalarType::F64(0.0));
         assert_eq!(ScalarType::F32(1.0).ln(), ScalarType::F32(0.0));
+
+        // Test ln with None.
+        assert_eq!(ScalarType::None.ln(), ScalarType::None);
     }
 
     #[test]
