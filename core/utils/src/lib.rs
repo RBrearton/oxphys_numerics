@@ -1,4 +1,5 @@
 pub mod enums;
+pub mod errors;
 pub mod functions;
 pub mod structs;
 pub mod traits;
