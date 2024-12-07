@@ -9,7 +9,7 @@ impl NoVariableError {
     /// Create a new LengthMismatchError.
     /// # Arguments
     /// * `map` - A mapping from variable names to their lengths.
-    fn new() -> NoVariableError {
+    pub(crate) fn new() -> NoVariableError {
         let err_msg = concat!(
             "No variables were provided to the expression. Expressions can't be ",
             "made without variables."
