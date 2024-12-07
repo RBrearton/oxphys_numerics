@@ -1,7 +1,7 @@
 use std::ops::{Add, Div, Mul, Sub};
 
 /// An enum to represent a scalar value.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum ScalarType {
     F64(f64),
     F32(f32),
@@ -29,3 +29,16 @@ impl_arith_trait!(Add, add, +);
 impl_arith_trait!(Sub, sub, -);
 impl_arith_trait!(Mul, mul, *);
 impl_arith_trait!(Div, div, /);
+
+/// Implement the From trait for f64 and f32 to allow implicit conversion to ScalarType.
+impl From<f64> for ScalarType {
+    fn from(value: f64) -> Self {
+        ScalarType::F64(value)
+    }
+}
+
+impl From<f32> for ScalarType {
+    fn from(value: f32) -> Self {
+        ScalarType::F32(value)
+    }
+}
