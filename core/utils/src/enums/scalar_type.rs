@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 /// An enum to represent a scalar value.
 #[derive(Clone, Copy, Debug)]
@@ -40,5 +40,15 @@ impl From<f64> for ScalarType {
 impl From<f32> for ScalarType {
     fn from(value: f32) -> Self {
         ScalarType::F32(value)
+    }
+}
+impl Neg for ScalarType {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        match self {
+            ScalarType::F64(value) => ScalarType::F64(-value),
+            ScalarType::F32(value) => ScalarType::F32(-value),
+        }
     }
 }
