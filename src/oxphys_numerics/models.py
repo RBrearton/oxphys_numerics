@@ -5,7 +5,9 @@ mathematically intuitive syntax when constructing expressions. For example, we o
 operator to allow for the syntax `expr1 + expr2` to be used to create an `Add` expression.
 
 Similarly, going against typical recommendations when working with pydantic models, we allow for
-positional arguments to be passed to the `__init__` method of these classes.
+positional arguments to be passed to the `__init__` method of these classes. Annoyingly, when doing
+this, we need a type ignore to work around the fact that pylance isn't clever enough to figure out
+how pydantic __init__ methods work.
 """
 
 import abc
