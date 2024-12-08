@@ -8,6 +8,7 @@ Similarly, going against typical recommendations when working with pydantic mode
 positional arguments to be passed to the `__init__` method of these classes.
 """
 
+import abc
 from typing import Self, Union
 
 from pydantic import BaseModel as PydanticBaseModel
@@ -45,7 +46,7 @@ def _to_expr(expr: ExprCastable) -> "Expr":
     raise InvalidExpressionError.from_unsupported_type(expr)
 
 
-class Expr(BaseModel):
+class Expr(BaseModel, abc.ABC):
     """Represents a mathematical expression.
 
     This base class handles the common operator overloads etc. that are shared by all expression
@@ -148,6 +149,16 @@ class Expr(BaseModel):
         """
         return Exp(expr=_to_expr(other), power=self)
 
+    @abc.abstractmethod
+    def to_latex(self) -> str:
+        """Convert the expression to a LaTeX string.
+
+        This method must be implemented by all expressions to allow for the conversion of the
+        expression to a LaTeX string.
+
+        If nothing else, it's handy for debugging/visualization, and it's easy enough to do.
+        """
+
 
 # region Leaf nodes
 
@@ -161,11 +172,17 @@ class Constant(Leaf):
 
     value: float
 
+    def to_latex(self) -> str:  # noqa: D102
+        return str(self.value)
+
 
 class Variable(Leaf):
     """Represents a variable."""
 
     name: str
+
+    def to_latex(self) -> str:  # noqa: D102
+        return self.name
 
 
 # endregion
@@ -182,28 +199,46 @@ class Unary(Expr):
         super().__init__(expr=_to_expr(expr))
 
 
-class Negate(Expr):
+class Negate(Unary):
     """Represents the negation of an expression."""
 
+    def to_latex(self) -> str:  # noqa: D102
+        return f"-{self.expr.to_latex()}"
 
-class Sqrt(Expr):
+
+class Sqrt(Unary):
     """Represents the square root of an expression."""
 
+    def to_latex(self) -> str:  # noqa: D102
+        return R"\sqrt{" + self.expr.to_latex() + "}"
 
-class Sin(Expr):
+
+class Sin(Unary):
     """Represents the sine of an expression."""
 
+    def to_latex(self) -> str:  # noqa: D102
+        return R"\sin{ \left(" + self.expr.to_latex() + R"\right) }"
 
-class Cos(Expr):
+
+class Cos(Unary):
     """Represents the cosine of an expression."""
 
+    def to_latex(self) -> str:  # noqa: D102
+        return R"\cos{ \left(" + self.expr.to_latex() + R"\right) }"
 
-class Exp(Expr):
+
+class Exp(Unary):
     """Represents the exponential of an expression."""
 
+    def to_latex(self) -> str:  # noqa: D102
+        return R"e^{" + self.expr.to_latex() + "}"
 
-class Ln(Expr):
+
+class Ln(Unary):
     """Represents the natural logarithm of an expression."""
+
+    def to_latex(self) -> str:  # noqa: D102
+        return R"\ln{" + self.expr.to_latex() + "}"
 
 
 # endregion
@@ -226,19 +261,29 @@ class Binary(Expr):
         super().__init__(left=_to_expr(left), right=_to_expr(right))
 
 
-class Add(Expr):
+class Add(Binary):
     """Represents the addition of two expressions."""
 
+    def to_latex(self) -> str:  # noqa: D102
+        return f"{self.left.to_latex()} + {self.right.to_latex()}"
 
-class Sub(Expr):
+
+class Sub(Binary):
     """Represents the subtraction of two expressions."""
 
+    def to_latex(self) -> str:  # noqa: D102
+        return f"{self.left.to_latex()} - {self.right.to_latex()}"
 
-class Mul(Expr):
+
+class Mul(Binary):
     """Represents the multiplication of two expressions."""
 
+    def to_latex(self) -> str:  # noqa: D102
+        # Note that we don't put a \times here; I think it leads to an uglier output.
+        return f"{self.left.to_latex()} {self.right.to_latex()}"
 
-class Log(Expr):
+
+class Log(Binary):
     """Represents the logarithm of an expression to a given base."""
 
     def __init__(self, arg: ExprCastable, base: ExprCastable, /) -> None:
@@ -248,11 +293,22 @@ class Log(Expr):
             arg: The argument of the logarithm.
             base: The base of the logarithm.
         """
-        super().__init__(arg=_to_expr(arg), base=_to_expr(base))
+        # This sets self.left to arg and self.right to base.
+        super().__init__(_to_expr(arg), _to_expr(base))
+
+        # Also keep track of arg and base as separate attributes.
+        self.arg = self.left
+        self.base = self.right
+
+    def to_latex(self) -> str:  # noqa: D102
+        return R"\log_{" + self.base.to_latex() + R"}{ \left(" + self.arg.to_latex() + R"\right)}"
 
 
-class Div(Expr):
+class Div(Binary):
     """Represents the division of two expressions."""
+
+    def to_latex(self) -> str:  # noqa: D102
+        return R"\frac{" + self.left.to_latex() + "}{" + self.right.to_latex() + "}"
 
 
 # endregion
