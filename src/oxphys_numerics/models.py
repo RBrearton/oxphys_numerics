@@ -9,15 +9,44 @@ positional arguments to be passed to the `__init__` method of these classes.
 """
 
 import abc
-from typing import Self, Union
+from typing import TYPE_CHECKING, Self, Union, overload
 
+import numpy as np
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import Field
 
 from .errors import InvalidExpressionError
 
+if TYPE_CHECKING:
+    import contextlib
+    from collections.abc import Sequence
+
+    with contextlib.suppress(ImportError):
+        import polars as pl
+
+    with contextlib.suppress(ImportError):
+        import pandas as pd
+
 ExprCastable = Union["Expr", float, int, str]
 """A type alias for the types that can be used to construct an expression."""
+
+NumLike = float | int
+"""A type alias for the types that can be used to represent a number."""
+
+ArrayLike = Union["np.ndarray", "Sequence[NumLike]"]
+"""A type alias for the types that can be used to represent an array-like object."""
+
+VariableId = Union[str, "Variable"]
+"""A type alias for the types that can be used to identify a variable."""
+
+ExprCallArg = Union[
+    "dict[VariableId, NumLike]",
+    "dict[VariableId, ArrayLike]",
+    "pd.DataFrame",
+    "pl.DataFrame",
+    None,
+]
+"""A type alias for the types that can be passed to the `__call__` method of an expression."""
 
 
 class BaseModel(PydanticBaseModel):
@@ -45,6 +74,9 @@ def _to_expr(expr: ExprCastable) -> "Expr":
     # If execution reaches this point, someone broke the type hints on this function and passed in
     # an unsupported type.
     raise InvalidExpressionError.from_unsupported_type(expr)
+
+
+# region Expr
 
 
 class Expr(BaseModel, abc.ABC):
@@ -154,6 +186,33 @@ class Expr(BaseModel, abc.ABC):
         """Create the string representation of the expression."""
         return self.to_latex()
 
+    @overload
+    def __call__(self, data: None = None, **kwargs: NumLike) -> float: ...
+
+    @overload
+    def __call__(self, data: None = None, **kwargs: ArrayLike) -> np.ndarray: ...
+
+    @overload
+    def __call__(self, data: "pd.DataFrame") -> "pd.DataFrame": ...
+
+    @overload
+    def __call__(self, data: "pl.DataFrame") -> "pl.DataFrame": ...
+
+    @overload
+    def __call__(self, data: "dict[VariableId, NumLike]") -> float: ...
+
+    @overload
+    def __call__(self, data: "dict[VariableId, ArrayLike]") -> np.ndarray: ...
+
+    def __call__(
+        self,
+        data: ExprCallArg = None,
+        **kwargs: NumLike | ArrayLike,
+    ) -> "float | np.ndarray | pd.DataFrame | pl.DataFrame":
+        """Evaluate the expression."""
+        # This is where we call rust functions :)
+        raise NotImplementedError
+
     @abc.abstractmethod
     def to_latex(self) -> str:
         """Convert the expression to a LaTeX string.
@@ -173,7 +232,8 @@ class Expr(BaseModel, abc.ABC):
         """
 
 
-# region Leaf nodes
+# endregion
+# region Leaf
 
 
 class Leaf(Expr):
@@ -254,7 +314,7 @@ class Variable(Leaf):
 
 
 # endregion
-# region Unary nodes
+# region Unary
 
 
 class Unary(Expr):
@@ -314,7 +374,7 @@ class Ln(Unary):
 
 
 # endregion
-# region Binary nodes
+# region Binary
 
 
 class Binary(Expr):
