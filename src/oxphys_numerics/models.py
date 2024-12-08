@@ -164,6 +164,14 @@ class Expr(BaseModel, abc.ABC):
         If nothing else, it's handy for debugging/visualization, and it's easy enough to do.
         """
 
+    @abc.abstractmethod
+    def variables(self) -> list["Variable"]:
+        """Return a list of all the variables in the expression.
+
+        This method must be implemented by all expressions to allow for the extraction of all the
+        variables in the expression.
+        """
+
 
 # region Leaf nodes
 
@@ -193,6 +201,9 @@ class Constant(Leaf):
         value = int(self.value) if self.value.is_integer() else self.value
         return str(value)
 
+    def variables(self) -> list["Variable"]:  # noqa: D102
+        return []
+
 
 class Variable(Leaf):
     """Represents a variable."""
@@ -211,6 +222,9 @@ class Variable(Leaf):
     def to_latex(self) -> str:  # noqa: D102
         return self.name
 
+    def variables(self) -> list["Variable"]:  # noqa: D102
+        return [self]
+
 
 # endregion
 # region Unary nodes
@@ -224,6 +238,10 @@ class Unary(Expr):
     def __init__(self, expr: ExprCastable, /) -> None:
         """Initialise a new unary expression."""
         super().__init__(expr=_to_expr(expr))
+
+    def variables(self) -> list["Variable"]:
+        """Return a list of all the variables in the expression."""
+        return self.expr.variables()
 
 
 class Negate(Unary):
@@ -286,6 +304,10 @@ class Binary(Expr):
             right: The second input to the binary expression.
         """
         super().__init__(left=_to_expr(left), right=_to_expr(right))
+
+    def variables(self) -> list["Variable"]:
+        """Return a list of all the variables in the expression."""
+        return [*self.left.variables(), *self.right.variables()]
 
 
 class Add(Binary):
