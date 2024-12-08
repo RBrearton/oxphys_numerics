@@ -17,3 +17,8 @@ class InvalidExpressionError(OxphysNumericsError):
     def from_missing_variable(cls, var_name: str) -> Self:
         """Raise this error when we can't make an expression because a variable is missing."""
         return cls(f"Variable {var_name} was not provided.")
+
+    @classmethod
+    def from_unexpected_variable(cls, var_name: str) -> Self:
+        """Raise this error when we can't make an expression because a variable is unexpected."""
+        return cls(f"Variable {var_name} was provided, but was not expected.")
