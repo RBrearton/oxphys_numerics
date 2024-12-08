@@ -7,11 +7,32 @@ authors = [
     { name = "Richard Brearton", email = "richard.brearton@physics.ox.ac.uk" },
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = ["pydantic>=2.10.3"]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+
+[tool.ruff]
+line-length = 80
+
+[tool.ruff.lint]
+ignore = [
+    "PLR0913",
+    "SIM117",
+    "COM812",
+    "T201",
+    "D413",
+    "PD901",
+    "RUF001",
+    "PGH003",
+]
+select = ["ALL"]
+unfixable = [
+    "F401", # Ignore unused imports.
+]
+
 
 [dependency-groups]
 dev = ["maturin>=1.7.7"]
