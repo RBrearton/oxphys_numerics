@@ -12,6 +12,7 @@ import abc
 from typing import Self, Union
 
 from pydantic import BaseModel as PydanticBaseModel
+from pydantic import Field
 
 from .errors import InvalidExpressionError
 
@@ -123,7 +124,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `-expr` to be used to create a
         `Negate` expression.
         """
-        return Negate(expr=self)
+        return Negate(self)
 
     def __pos__(self) -> Self:
         """Return the expression unchanged.
@@ -139,7 +140,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 ** expr2` to be used to
         create an `Exp` expression.
         """
-        return Exp(expr=self, power=_to_expr(other))
+        return Pow(base=self, exponent=_to_expr(other))
 
     def __rpow__(self, other: ExprCastable) -> "Exp":
         """Raise an expression to a power.
@@ -147,7 +148,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 ** expr2` to be used to
         create an `Exp` expression.
         """
-        return Exp(expr=_to_expr(other), power=self)
+        return Pow(base=_to_expr(other), exponent=self)
 
     @abc.abstractmethod
     def to_latex(self) -> str:
@@ -299,6 +300,30 @@ class Mul(Binary):
     def to_latex(self) -> str:  # noqa: D102
         # Note that we don't put a \times here; I think it leads to an uglier output.
         return f"{self.left.to_latex()} {self.right.to_latex()}"
+
+
+class Pow(Binary):
+    """Represents the power of two expressions."""
+
+    base: Expr = Field(default=None)
+    exponent: Expr = Field(default=None)
+
+    def __init__(self, base: ExprCastable, exponent: ExprCastable) -> None:
+        """Initialise a new power expression.
+
+        Args:
+            base: The base of the power.
+            exponent: The exponent of the power.
+        """
+        # This sets self.left to base and self.right to exponent.
+        super().__init__(_to_expr(base), _to_expr(exponent))
+
+        # Also keep track of base and exponent as separate attributes.
+        self.base = self.left
+        self.exponent = self.right
+
+    def to_latex(self) -> str:  # noqa: D102
+        return f"{self.base.to_latex()}^{{{self.exponent.to_latex()}}}"
 
 
 class Log(Binary):
