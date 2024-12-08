@@ -334,7 +334,8 @@ class Binary(Expr):
 
     def variables(self) -> list["Variable"]:
         """Return a list of all the variables in the expression."""
-        return [*self.left.variables(), *self.right.variables()]
+        # We need to make sure that we don't have any duplicates in the list of variables.
+        return list(set(self.left.variables() + self.right.variables()))
 
 
 class Add(Binary):
