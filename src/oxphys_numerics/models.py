@@ -172,6 +172,15 @@ class Constant(Leaf):
 
     value: float
 
+    def __init__(self, value: float) -> None:
+        """Initialise a new constant.
+
+        Args:
+            value: The value of the constant.
+        """
+        # We can make constants with or without using keyword arguments.
+        super().__init__(value=value)
+
     def to_latex(self) -> str:  # noqa: D102
         return str(self.value)
 
@@ -180,6 +189,15 @@ class Variable(Leaf):
     """Represents a variable."""
 
     name: str
+
+    def __init__(self, name: str) -> None:
+        """Initialise a new variable.
+
+        Args:
+            name: The name of the variable.
+        """
+        # We can make variables with or without using keyword arguments.
+        super().__init__(name=name)
 
     def to_latex(self) -> str:  # noqa: D102
         return self.name
