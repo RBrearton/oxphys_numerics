@@ -59,7 +59,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 + expr2` to be used to
         create an `Add` expression.
         """
-        return Add(left=self, right=_to_expr(other))
+        return Add(self, _to_expr(other))
 
     def __radd__(self, other: ExprCastable) -> "Add":
         """Add two expressions together.
@@ -67,7 +67,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 + expr2` to be used to
         create an `Add` expression.
         """
-        return Add(left=_to_expr(other), right=self)
+        return Add(_to_expr(other), self)
 
     def __sub__(self, other: ExprCastable) -> "Sub":
         """Subtract one expression from another.
@@ -75,7 +75,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 - expr2` to be used to
         create a `Sub` expression.
         """
-        return Sub(left=self, right=_to_expr(other))
+        return Sub(self, _to_expr(other))
 
     def __rsub__(self, other: ExprCastable) -> "Sub":
         """Subtract one expression from another.
@@ -83,7 +83,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 - expr2` to be used to
         create a `Sub` expression.
         """
-        return Sub(left=_to_expr(other), right=self)
+        return Sub(_to_expr(other), self)
 
     def __mul__(self, other: ExprCastable) -> "Mul":
         """Multiply two expressions together.
@@ -91,7 +91,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 * expr2` to be used to
         create a `Mul` expression.
         """
-        return Mul(left=self, right=_to_expr(other))
+        return Mul(self, _to_expr(other))
 
     def __rmul__(self, other: ExprCastable) -> "Mul":
         """Multiply two expressions together.
@@ -99,7 +99,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 * expr2` to be used to
         create a `Mul` expression.
         """
-        return Mul(left=_to_expr(other), right=self)
+        return Mul(_to_expr(other), self)
 
     def __truediv__(self, other: ExprCastable) -> "Div":
         """Divide one expression by another.
@@ -107,7 +107,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 / expr2` to be used to
         create a `Div` expression.
         """
-        return Div(left=self, right=_to_expr(other))
+        return Div(self, _to_expr(other))
 
     def __rtruediv__(self, other: ExprCastable) -> "Div":
         """Divide one expression by another.
@@ -115,7 +115,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 / expr2` to be used to
         create a `Div` expression.
         """
-        return Div(left=_to_expr(other), right=self)
+        return Div(_to_expr(other), self)
 
     def __neg__(self) -> "Negate":
         """Negate an expression.
