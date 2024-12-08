@@ -15,7 +15,7 @@ build-backend = "hatchling.build"
 
 
 [tool.ruff]
-line-length = 80
+line-length = 100
 
 [tool.ruff.lint]
 ignore = [
