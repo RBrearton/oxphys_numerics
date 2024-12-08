@@ -233,6 +233,18 @@ class Variable(Leaf):
         """
         return f"Variable({self.name})"
 
+    def __eq__(self, other: object) -> bool:
+        """Check if two variables are equal.
+
+        This is necessary for the variable to be used in sets and as a key in dictionaries.
+        """
+        # If it isn't a variable, it can't be equal.
+        if not isinstance(other, Variable):
+            return False
+
+        # If the names are the same, the variables are equal.
+        return self.name == other.name
+
     def __hash__(self) -> int:
         """Return the hash of the variable.
 
