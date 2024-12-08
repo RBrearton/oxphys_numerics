@@ -10,7 +10,9 @@
     "oxphys",
     "prefactor",
     "pybindings",
+    "pyclass",
     "pyfunction",
+    "pymethods",
     "pymodule",
     "sdist",
     "venv"

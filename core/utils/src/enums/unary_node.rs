@@ -14,10 +14,7 @@ pub enum UnaryNode {
 }
 
 impl Expression for UnaryNode {
-    fn evaluate(
-        &self,
-        variables: &std::collections::HashMap<String, super::scalar_type::ScalarType>,
-    ) -> super::scalar_type::ScalarType {
+    fn evaluate(&self, variables: &Vec<f64>) -> f64 {
         match self {
             UnaryNode::Negate(inner) => -inner.evaluate(variables),
             UnaryNode::Sqrt(inner) => inner.evaluate(variables).sqrt(),
@@ -27,36 +24,20 @@ impl Expression for UnaryNode {
             UnaryNode::Ln(inner) => inner.evaluate(variables).ln(),
         }
     }
-
-    fn get_variables(&self) -> Vec<String> {
-        match self {
-            UnaryNode::Negate(inner)
-            | UnaryNode::Sqrt(inner)
-            | UnaryNode::Sin(inner)
-            | UnaryNode::Cos(inner)
-            | UnaryNode::Exp(inner)
-            | UnaryNode::Ln(inner) => inner.get_variables(),
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
-
-    use crate::enums::{leaf_node::LeafNode, scalar_type::ScalarType};
-
     use super::*;
+    use crate::enums::leaf_node::LeafNode;
 
     #[test]
     fn test_evaluate() {
         // Set up the variables hashmap.
-        let mut variables = std::collections::HashMap::new();
-        variables.insert("x".to_string(), ScalarType::F64(2.0));
+        let variables = vec![1.0, 2.0, 3.0];
 
         // f(x) = -x
-        let expr = Expr::Unary(UnaryNode::Negate(Box::new(Expr::Leaf(LeafNode::Variable(
-            "x".to_string(),
-        )))));
-        assert_eq!(expr.evaluate(&variables), ScalarType::F64(-2.0));
+        let expr = UnaryNode::Negate(Box::new(Expr::Leaf(LeafNode::Variable(1))));
+        assert_eq!(expr.evaluate(&variables), -2.0);
     }
 }
