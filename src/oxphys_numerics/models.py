@@ -183,7 +183,11 @@ class Constant(Leaf):
         super().__init__(value=value)
 
     def to_latex(self) -> str:  # noqa: D102
-        return str(self.value)
+        # Make sure that we recast the value to an integer if it's actually an int under the hood.
+        # This happens quite a lot when someone makes an expression using something like:
+        # `Constant(2) + Constant(3)`.
+        value = int(self.value) if self.value.is_integer() else self.value
+        return str(value)
 
 
 class Variable(Leaf):
