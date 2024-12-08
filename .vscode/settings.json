@@ -16,6 +16,7 @@
     "pymethods",
     "pymodule",
     "sdist",
+    "sinc",
     "venv"
   ],
   "editor.rulers": [100]

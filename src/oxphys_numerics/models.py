@@ -150,6 +150,10 @@ class Expr(BaseModel, abc.ABC):
         """
         return Pow(base=_to_expr(other), exponent=self)
 
+    def __str__(self) -> str:
+        """Create the string representation of the expression."""
+        return self.to_latex()
+
     @abc.abstractmethod
     def to_latex(self) -> str:
         """Convert the expression to a LaTeX string.
