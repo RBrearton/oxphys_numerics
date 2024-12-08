@@ -12,3 +12,8 @@ class InvalidExpressionError(OxphysNumericsError):
     def from_unsupported_type(cls, obj: Any) -> Self:  # noqa: ANN401
         """Raise this error when we can't make an expression because we don't support the type."""
         return cls(f"Cannot convert {obj} with type {type(obj)} to an expression.")
+
+    @classmethod
+    def from_missing_variable(cls, var_name: str) -> Self:
+        """Raise this error when we can't make an expression because a variable is missing."""
+        return cls(f"Variable {var_name} was not provided.")
