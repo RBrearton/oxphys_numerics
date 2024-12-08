@@ -12,20 +12,16 @@ import abc
 from typing import TYPE_CHECKING, Self, Union, overload
 
 import numpy as np
+import pandas as pd
+import polars as pl
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import Field
 
 from .errors import InvalidExpressionError
 
 if TYPE_CHECKING:
-    import contextlib
     from collections.abc import Sequence
 
-    with contextlib.suppress(ImportError):
-        import polars as pl
-
-    with contextlib.suppress(ImportError):
-        import pandas as pd
 
 ExprCastable = Union["Expr", float, int, str]
 """A type alias for the types that can be used to construct an expression."""
@@ -210,8 +206,48 @@ class Expr(BaseModel, abc.ABC):
         **kwargs: NumLike | ArrayLike,
     ) -> "float | np.ndarray | pd.DataFrame | pl.DataFrame":
         """Evaluate the expression."""
-        # This is where we call rust functions :)
-        raise NotImplementedError
+        # If we were given a pandas DataFrame, convert it to polars.
+        if isinstance(data, pd.DataFrame):
+            data = pl.from_pandas(data)
+
+        # If we were given a polars dataframe, convert it to a dictionary.
+        if isinstance(data, pl.DataFrame):
+            data = {col: data[col].to_numpy() for col in data.columns}
+
+        # Our input data is the data if provided, or the kwargs if not.
+        data_dict = data or kwargs
+
+        # Get the first value from the dictionary.
+        first_value = next(iter(data_dict.values()))
+
+        # Check to see if we've got one value for each variable.
+        if isinstance(first_value, int | float):
+            # If the first value is an int | float, then all the values must be int | float.
+            if not all(isinstance(value, int | float) for value in data_dict.values()):
+                raise InvalidExpressionError.from_inconsistent_arguments(data_dict)
+
+            # We need a type ignore here because this type check is tricky for it to follow.
+            return self._call_float(data_dict)  # type: ignore
+
+        # If execution reaches here, we must have all array-like values. We need the type ignore
+        # because type checkers struggle with the above isinstance checks.
+        return self._call_array(data_dict)  # type: ignore
+
+    @abc.abstractmethod
+    def _call_float(self, data: "dict[VariableId, NumLike]") -> float:
+        """Evaluate the expression when each variable has a single value.
+
+        This method must be implemented by all expressions to allow for the evaluation of the
+        expression with a dictionary of variables.
+        """
+
+    @abc.abstractmethod
+    def _call_array(self, data: "dict[VariableId, ArrayLike]") -> np.ndarray:
+        """Evaluate the expression many times; each variable has an array of values.
+
+        This method must be implemented by all expressions to allow for the evaluation of the
+        expression with a dictionary of arrays.
+        """
 
     @abc.abstractmethod
     def to_latex(self) -> str:

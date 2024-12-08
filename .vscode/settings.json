@@ -20,5 +20,6 @@
     "sinc",
     "venv"
   ],
-  "editor.rulers": [100]
+  "editor.rulers": [100],
+  "python.analysis.typeCheckingMode": "standard"
 }
