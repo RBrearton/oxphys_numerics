@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt};
+use std::fmt;
 
 #[derive(Debug)]
 pub struct LengthMismatchError {
@@ -9,11 +9,11 @@ impl LengthMismatchError {
     /// Create a new LengthMismatchError.
     /// # Arguments
     /// * `map` - A mapping from variable names to their lengths.
-    pub(crate) fn new(map: HashMap<String, usize>) -> LengthMismatchError {
+    pub(crate) fn new(lengths: Vec<usize>) -> LengthMismatchError {
         LengthMismatchError {
             details: format!(
                 "The lengths of the variables in the expression do not match: {:?}",
-                map
+                lengths
             ),
         }
     }
