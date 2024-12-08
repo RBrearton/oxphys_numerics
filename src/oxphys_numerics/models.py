@@ -225,6 +225,21 @@ class Variable(Leaf):
     def variables(self) -> list["Variable"]:  # noqa: D102
         return [self]
 
+    def __str__(self) -> str:
+        """Create the string representation of the variable.
+
+        If we're just printing a variable, instead of defaulting to the LaTeX representation, we
+        have a slightly nicer, more custom representation.
+        """
+        return f"Variable({self.name})"
+
+    def __hash__(self) -> int:
+        """Return the hash of the variable.
+
+        This is necessary for the variable to be used in sets and as a key in dictionaries.
+        """
+        return hash(self.name)
+
 
 # endregion
 # region Unary nodes
