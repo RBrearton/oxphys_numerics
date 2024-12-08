@@ -11,6 +11,7 @@
     "prefactor",
     "pybindings",
     "pyclass",
+    "pydantic",
     "pyfunction",
     "pymethods",
     "pymodule",
