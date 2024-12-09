@@ -19,6 +19,6 @@ class InvalidExpressionError(OxphysNumericsError):
         return cls(f"Variable {var_name} was not provided.")
 
     @classmethod
-    def from_unexpected_variable(cls, var_name: str) -> Self:
-        """Raise this error when we can't make an expression because a variable is unexpected."""
-        return cls(f"Variable {var_name} was provided, but was not expected.")
+    def from_inconsistent_arguments(cls, argument_dict: dict) -> Self:
+        """Raise this error when the arguments to an expression are inconsistent."""
+        return cls(f"Arguments {argument_dict} have inconsistent types.")
