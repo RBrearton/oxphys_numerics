@@ -265,16 +265,18 @@ class Leaf(Expr):
 class Constant(Leaf):
     """Represents a constant value."""
 
-    value: float
-
     def __init__(self, value: float) -> None:
         """Initialise a new constant.
 
         Args:
             value: The value of the constant.
         """
-        # We can make constants with or without using keyword arguments.
-        super().__init__(value=value)  # type: ignore
+        self._value = value
+
+    @property
+    def value(self) -> float:
+        """Return the value of the constant."""
+        return self._value
 
     def to_latex(self) -> str:
         # Make sure that we recast the value to an integer if it's actually an int under the hood.
