@@ -100,21 +100,21 @@ class Expr(abc.ABC):
         """
         return Minus(_to_expr(other), self)
 
-    def __mul__(self, other: ExprCastable) -> "Mul":
+    def __mul__(self, other: ExprCastable) -> "Multiply":
         """Multiply two expressions together.
 
         This method is used to allow the syntax `expr1 * expr2` to be used to
         create a `Mul` expression.
         """
-        return Mul(self, _to_expr(other))
+        return Multiply(self, _to_expr(other))
 
-    def __rmul__(self, other: ExprCastable) -> "Mul":
+    def __rmul__(self, other: ExprCastable) -> "Multiply":
         """Multiply two expressions together.
 
         This method is used to allow the syntax `expr1 * expr2` to be used to
         create a `Mul` expression.
         """
-        return Mul(_to_expr(other), self)
+        return Multiply(_to_expr(other), self)
 
     def __truediv__(self, other: ExprCastable) -> "Fraction":
         """Divide one expression by another.
@@ -443,7 +443,7 @@ class Minus(Binary):
         return f"{self._left.to_latex()} - {self._right.to_latex()}"
 
 
-class Mul(Binary):
+class Multiply(Binary):
     """Represents the multiplication of two expressions."""
 
     def to_latex(self) -> str:
