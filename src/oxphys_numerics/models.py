@@ -253,6 +253,10 @@ class Expr(abc.ABC):
         variables in the expression.
         """
 
+    @abc.abstractmethod
+    def children(self) -> list["Expr"]:
+        """Return a list of all the children of the expression."""
+
 
 # endregion
 # region Leaf
@@ -260,6 +264,10 @@ class Expr(abc.ABC):
 
 class Leaf(Expr):
     """The base class for all leaf nodes in the expression tree."""
+
+    def children(self) -> list[Expr]:
+        # Leaf nodes have no children.
+        return []
 
 
 class Constant(Leaf):
@@ -349,6 +357,9 @@ class Unary(Expr):
         """Return a list of all the variables in the expression."""
         return self._expr.variables()
 
+    def children(self) -> list[Expr]:
+        return [self._expr]
+
 
 class Negate(Unary):
     """Represents the negation of an expression."""
@@ -413,6 +424,9 @@ class Binary(Expr):
         """Return a list of all the variables in the expression."""
         # We need to make sure that we don't have any duplicates in the list of variables.
         return list(set(self._left.variables() + self._right.variables()))
+
+    def children(self) -> list[Expr]:
+        return [self._left, self._right]
 
 
 class Add(Binary):
