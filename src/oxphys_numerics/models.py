@@ -24,7 +24,6 @@ from .errors import InvalidExpressionError
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-
 ExprCastable = Union["Expr", float, int, str]
 """A type alias for the types that can be used to construct an expression."""
 
@@ -90,7 +89,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 + expr2` to be used to
         create an `Add` expression.
         """
-        return Add(self, _to_expr(other))
+        return Add(left=self, right=_to_expr(other))
 
     def __radd__(self, other: ExprCastable) -> "Add":
         """Add two expressions together.
@@ -98,7 +97,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 + expr2` to be used to
         create an `Add` expression.
         """
-        return Add(_to_expr(other), self)
+        return Add(left=_to_expr(other), right=self)
 
     def __sub__(self, other: ExprCastable) -> "Sub":
         """Subtract one expression from another.
@@ -106,7 +105,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 - expr2` to be used to
         create a `Sub` expression.
         """
-        return Sub(self, _to_expr(other))
+        return Sub(left=self, right=_to_expr(other))
 
     def __rsub__(self, other: ExprCastable) -> "Sub":
         """Subtract one expression from another.
@@ -114,7 +113,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 - expr2` to be used to
         create a `Sub` expression.
         """
-        return Sub(_to_expr(other), self)
+        return Sub(left=_to_expr(other), right=self)
 
     def __mul__(self, other: ExprCastable) -> "Mul":
         """Multiply two expressions together.
@@ -122,7 +121,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 * expr2` to be used to
         create a `Mul` expression.
         """
-        return Mul(self, _to_expr(other))
+        return Mul(left=self, right=_to_expr(other))
 
     def __rmul__(self, other: ExprCastable) -> "Mul":
         """Multiply two expressions together.
@@ -130,7 +129,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 * expr2` to be used to
         create a `Mul` expression.
         """
-        return Mul(_to_expr(other), self)
+        return Mul(left=_to_expr(other), right=self)
 
     def __truediv__(self, other: ExprCastable) -> "Div":
         """Divide one expression by another.
@@ -138,7 +137,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 / expr2` to be used to
         create a `Div` expression.
         """
-        return Div(self, _to_expr(other))
+        return Div(left=self, right=_to_expr(other))
 
     def __rtruediv__(self, other: ExprCastable) -> "Div":
         """Divide one expression by another.
@@ -146,7 +145,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 / expr2` to be used to
         create a `Div` expression.
         """
-        return Div(_to_expr(other), self)
+        return Div(left=_to_expr(other), right=self)
 
     def __neg__(self) -> "Negate":
         """Negate an expression.
@@ -154,7 +153,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `-expr` to be used to create a
         `Negate` expression.
         """
-        return Negate(self)
+        return Negate(expr=self)
 
     def __pos__(self) -> Self:
         """Return the expression unchanged.
@@ -164,7 +163,7 @@ class Expr(BaseModel, abc.ABC):
         """
         return self
 
-    def __pow__(self, other: ExprCastable) -> "Exp":
+    def __pow__(self, other: ExprCastable) -> "Pow":
         """Raise an expression to a power.
 
         This method is used to allow the syntax `expr1 ** expr2` to be used to
@@ -172,7 +171,7 @@ class Expr(BaseModel, abc.ABC):
         """
         return Pow(base=self, exponent=_to_expr(other))
 
-    def __rpow__(self, other: ExprCastable) -> "Exp":
+    def __rpow__(self, other: ExprCastable) -> "Pow":
         """Raise an expression to a power.
 
         This method is used to allow the syntax `expr1 ** expr2` to be used to
@@ -229,27 +228,27 @@ class Expr(BaseModel, abc.ABC):
                 raise InvalidExpressionError.from_inconsistent_arguments(data_dict)
 
             # We need a type ignore here because this type check is tricky for it to follow.
-            return self._call_float(data_dict)  # type: ignore
+            return self.call_float(data_dict)  # type: ignore
 
         # If execution reaches here, we must have all array-like values. We need the type ignore
         # because type checkers struggle with the above isinstance checks.
-        return self._call_array(data_dict)  # type: ignore
+        return self.call_array(data_dict)  # type: ignore
 
-    @abc.abstractmethod
-    def _call_float(self, data: "dict[VariableId, NumLike]") -> float:
+    def call_float(self, data: "dict[Variable, NumLike]") -> float:
         """Evaluate the expression when each variable has a single value.
 
         This method must be implemented by all expressions to allow for the evaluation of the
         expression with a dictionary of variables.
         """
+        raise NotImplementedError
 
-    @abc.abstractmethod
-    def _call_array(self, data: "dict[VariableId, ArrayLike]") -> np.ndarray:
+    def call_array(self, data: "dict[Variable, ArrayLike]") -> np.ndarray | float:
         """Evaluate the expression many times; each variable has an array of values.
 
         This method must be implemented by all expressions to allow for the evaluation of the
         expression with a dictionary of arrays.
         """
+        raise NotImplementedError
 
     @abc.abstractmethod
     def to_latex(self) -> str:
@@ -290,16 +289,16 @@ class Constant(Leaf):
             value: The value of the constant.
         """
         # We can make constants with or without using keyword arguments.
-        super().__init__(value=value)
+        super().__init__(value=value)  # type: ignore
 
-    def to_latex(self) -> str:  # noqa: D102
+    def to_latex(self) -> str:
         # Make sure that we recast the value to an integer if it's actually an int under the hood.
         # This happens quite a lot when someone makes an expression using something like:
         # `Constant(2) + Constant(3)`.
         value = int(self.value) if self.value.is_integer() else self.value
         return str(value)
 
-    def variables(self) -> list["Variable"]:  # noqa: D102
+    def variables(self) -> list["Variable"]:
         return []
 
 
@@ -315,12 +314,12 @@ class Variable(Leaf):
             name: The name of the variable.
         """
         # We can make variables with or without using keyword arguments.
-        super().__init__(name=name)
+        super().__init__(name=name)  # type: ignore
 
-    def to_latex(self) -> str:  # noqa: D102
+    def to_latex(self) -> str:
         return self.name
 
-    def variables(self) -> list["Variable"]:  # noqa: D102
+    def variables(self) -> list["Variable"]:
         return [self]
 
     def __str__(self) -> str:
@@ -360,9 +359,9 @@ class Unary(Expr):
 
     expr: Expr
 
-    def __init__(self, expr: ExprCastable, /) -> None:
+    def __init__(self, expr: ExprCastable) -> None:
         """Initialise a new unary expression."""
-        super().__init__(expr=_to_expr(expr))
+        super().__init__(expr=_to_expr(expr))  # type: ignore
 
     def variables(self) -> list["Variable"]:
         """Return a list of all the variables in the expression."""
@@ -372,42 +371,42 @@ class Unary(Expr):
 class Negate(Unary):
     """Represents the negation of an expression."""
 
-    def to_latex(self) -> str:  # noqa: D102
+    def to_latex(self) -> str:
         return f"-{self.expr.to_latex()}"
 
 
 class Sqrt(Unary):
     """Represents the square root of an expression."""
 
-    def to_latex(self) -> str:  # noqa: D102
+    def to_latex(self) -> str:
         return R"\sqrt{" + self.expr.to_latex() + "}"
 
 
 class Sin(Unary):
     """Represents the sine of an expression."""
 
-    def to_latex(self) -> str:  # noqa: D102
+    def to_latex(self) -> str:
         return R"\sin{ \left(" + self.expr.to_latex() + R"\right) }"
 
 
 class Cos(Unary):
     """Represents the cosine of an expression."""
 
-    def to_latex(self) -> str:  # noqa: D102
+    def to_latex(self) -> str:
         return R"\cos{ \left(" + self.expr.to_latex() + R"\right) }"
 
 
 class Exp(Unary):
     """Represents the exponential of an expression."""
 
-    def to_latex(self) -> str:  # noqa: D102
+    def to_latex(self) -> str:
         return R"e^{" + self.expr.to_latex() + "}"
 
 
 class Ln(Unary):
     """Represents the natural logarithm of an expression."""
 
-    def to_latex(self) -> str:  # noqa: D102
+    def to_latex(self) -> str:
         return R"\ln{" + self.expr.to_latex() + "}"
 
 
@@ -421,14 +420,14 @@ class Binary(Expr):
     left: Expr
     right: Expr
 
-    def __init__(self, left: ExprCastable, right: ExprCastable, /) -> None:
+    def __init__(self, left: ExprCastable, right: ExprCastable) -> None:
         """Initialise a new binary expression.
 
         Args:
             left: The first input to the binary expression.
             right: The second input to the binary expression.
         """
-        super().__init__(left=_to_expr(left), right=_to_expr(right))
+        super().__init__(left=_to_expr(left), right=_to_expr(right))  # type: ignore
 
     def variables(self) -> list["Variable"]:
         """Return a list of all the variables in the expression."""
@@ -439,21 +438,21 @@ class Binary(Expr):
 class Add(Binary):
     """Represents the addition of two expressions."""
 
-    def to_latex(self) -> str:  # noqa: D102
+    def to_latex(self) -> str:
         return f"{self.left.to_latex()} + {self.right.to_latex()}"
 
 
 class Sub(Binary):
     """Represents the subtraction of two expressions."""
 
-    def to_latex(self) -> str:  # noqa: D102
+    def to_latex(self) -> str:
         return f"{self.left.to_latex()} - {self.right.to_latex()}"
 
 
 class Mul(Binary):
     """Represents the multiplication of two expressions."""
 
-    def to_latex(self) -> str:  # noqa: D102
+    def to_latex(self) -> str:
         # Note that we don't put a \times here; I think it leads to an uglier output.
         return f"{self.left.to_latex()} {self.right.to_latex()}"
 
@@ -461,8 +460,8 @@ class Mul(Binary):
 class Pow(Binary):
     """Represents the power of two expressions."""
 
-    base: Expr = Field(default=None)
-    exponent: Expr = Field(default=None)
+    base: Expr = Field(default=None)  # type: ignore
+    exponent: Expr = Field(default=None)  # type: ignore
 
     def __init__(self, base: ExprCastable, exponent: ExprCastable) -> None:
         """Initialise a new power expression.
@@ -478,14 +477,14 @@ class Pow(Binary):
         self.base = self.left
         self.exponent = self.right
 
-    def to_latex(self) -> str:  # noqa: D102
+    def to_latex(self) -> str:
         return f"{self.base.to_latex()}^{{{self.exponent.to_latex()}}}"
 
 
 class Log(Binary):
     """Represents the logarithm of an expression to a given base."""
 
-    def __init__(self, arg: ExprCastable, base: ExprCastable, /) -> None:
+    def __init__(self, arg: ExprCastable, base: ExprCastable) -> None:
         """Initialise a new logarithm expression.
 
         Args:
@@ -499,14 +498,14 @@ class Log(Binary):
         self.arg = self.left
         self.base = self.right
 
-    def to_latex(self) -> str:  # noqa: D102
+    def to_latex(self) -> str:
         return R"\log_{" + self.base.to_latex() + R"}{ \left(" + self.arg.to_latex() + R"\right)}"
 
 
 class Div(Binary):
     """Represents the division of two expressions."""
 
-    def to_latex(self) -> str:  # noqa: D102
+    def to_latex(self) -> str:
         return R"\frac{" + self.left.to_latex() + "}{" + self.right.to_latex() + "}"
 
 
