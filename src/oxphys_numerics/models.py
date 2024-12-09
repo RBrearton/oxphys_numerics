@@ -1,13 +1,8 @@
-"""Define all the pydantic models used to construct expressions.
+"""Define all the data models used to construct expressions.
 
 We explicitly override a large number of magic methods in these classes to allow for a more
 mathematically intuitive syntax when constructing expressions. For example, we override the `+`
 operator to allow for the syntax `expr1 + expr2` to be used to create an `Add` expression.
-
-Similarly, going against typical recommendations when working with pydantic models, we allow for
-positional arguments to be passed to the `__init__` method of these classes. Annoyingly, when doing
-this, we need a type ignore to work around the fact that pylance isn't clever enough to figure out
-how pydantic __init__ methods work.
 """
 
 import abc
@@ -16,8 +11,6 @@ from typing import TYPE_CHECKING, Self, Union, overload
 import numpy as np
 import pandas as pd
 import polars as pl
-from pydantic import BaseModel as PydanticBaseModel
-from pydantic import Field
 
 from .errors import InvalidExpressionError
 
@@ -46,14 +39,6 @@ ExprCallArg = Union[
 """A type alias for the types that can be passed to the `__call__` method of an expression."""
 
 
-class BaseModel(PydanticBaseModel):
-    """The base class for all oxphys_numerics pydantic models.
-
-    This base class is here in case we want to change some global pydantic config for all models in
-    the whole `oxphys_numerics` package.
-    """
-
-
 def _to_expr(expr: ExprCastable) -> "Expr":
     """Convert a value to an expression.
 
@@ -76,7 +61,7 @@ def _to_expr(expr: ExprCastable) -> "Expr":
 # region Expr
 
 
-class Expr(BaseModel, abc.ABC):
+class Expr(abc.ABC):
     """Represents a mathematical expression.
 
     This base class handles the common operator overloads etc. that are shared by all expression
@@ -89,7 +74,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 + expr2` to be used to
         create an `Add` expression.
         """
-        return Add(left=self, right=_to_expr(other))
+        return Add(self, _to_expr(other))
 
     def __radd__(self, other: ExprCastable) -> "Add":
         """Add two expressions together.
@@ -97,7 +82,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 + expr2` to be used to
         create an `Add` expression.
         """
-        return Add(left=_to_expr(other), right=self)
+        return Add(_to_expr(other), self)
 
     def __sub__(self, other: ExprCastable) -> "Sub":
         """Subtract one expression from another.
@@ -105,7 +90,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 - expr2` to be used to
         create a `Sub` expression.
         """
-        return Sub(left=self, right=_to_expr(other))
+        return Sub(self, _to_expr(other))
 
     def __rsub__(self, other: ExprCastable) -> "Sub":
         """Subtract one expression from another.
@@ -113,7 +98,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 - expr2` to be used to
         create a `Sub` expression.
         """
-        return Sub(left=_to_expr(other), right=self)
+        return Sub(_to_expr(other), self)
 
     def __mul__(self, other: ExprCastable) -> "Mul":
         """Multiply two expressions together.
@@ -121,7 +106,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 * expr2` to be used to
         create a `Mul` expression.
         """
-        return Mul(left=self, right=_to_expr(other))
+        return Mul(self, _to_expr(other))
 
     def __rmul__(self, other: ExprCastable) -> "Mul":
         """Multiply two expressions together.
@@ -129,7 +114,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 * expr2` to be used to
         create a `Mul` expression.
         """
-        return Mul(left=_to_expr(other), right=self)
+        return Mul(_to_expr(other), self)
 
     def __truediv__(self, other: ExprCastable) -> "Div":
         """Divide one expression by another.
@@ -137,7 +122,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 / expr2` to be used to
         create a `Div` expression.
         """
-        return Div(left=self, right=_to_expr(other))
+        return Div(numerator=self, denominator=_to_expr(other))
 
     def __rtruediv__(self, other: ExprCastable) -> "Div":
         """Divide one expression by another.
@@ -145,7 +130,7 @@ class Expr(BaseModel, abc.ABC):
         This method is used to allow the syntax `expr1 / expr2` to be used to
         create a `Div` expression.
         """
-        return Div(left=_to_expr(other), right=self)
+        return Div(numerator=_to_expr(other), denominator=self)
 
     def __neg__(self) -> "Negate":
         """Negate an expression.
@@ -305,19 +290,16 @@ class Constant(Leaf):
 class Variable(Leaf):
     """Represents a variable."""
 
-    name: str
-
     def __init__(self, name: str) -> None:
         """Initialise a new variable.
 
         Args:
             name: The name of the variable.
         """
-        # We can make variables with or without using keyword arguments.
-        super().__init__(name=name)  # type: ignore
+        self._name = name
 
     def to_latex(self) -> str:
-        return self.name
+        return self._name
 
     def variables(self) -> list["Variable"]:
         return [self]
@@ -328,7 +310,7 @@ class Variable(Leaf):
         If we're just printing a variable, instead of defaulting to the LaTeX representation, we
         have a slightly nicer, more custom representation.
         """
-        return f"Variable({self.name})"
+        return f"Variable({self._name})"
 
     def __eq__(self, other: object) -> bool:
         """Check if two variables are equal.
@@ -340,14 +322,14 @@ class Variable(Leaf):
             return False
 
         # If the names are the same, the variables are equal.
-        return self.name == other.name
+        return self._name == other._name
 
     def __hash__(self) -> int:
         """Return the hash of the variable.
 
         This is necessary for the variable to be used in sets and as a key in dictionaries.
         """
-        return hash(self.name)
+        return hash(self._name)
 
 
 # endregion
@@ -357,57 +339,55 @@ class Variable(Leaf):
 class Unary(Expr):
     """The base class for all unary nodes in the expression tree."""
 
-    expr: Expr
-
     def __init__(self, expr: ExprCastable) -> None:
         """Initialise a new unary expression."""
-        super().__init__(expr=_to_expr(expr))  # type: ignore
+        self._expr = _to_expr(expr)
 
     def variables(self) -> list["Variable"]:
         """Return a list of all the variables in the expression."""
-        return self.expr.variables()
+        return self._expr.variables()
 
 
 class Negate(Unary):
     """Represents the negation of an expression."""
 
     def to_latex(self) -> str:
-        return f"-{self.expr.to_latex()}"
+        return f"-{self._expr.to_latex()}"
 
 
 class Sqrt(Unary):
     """Represents the square root of an expression."""
 
     def to_latex(self) -> str:
-        return R"\sqrt{" + self.expr.to_latex() + "}"
+        return R"\sqrt{" + self._expr.to_latex() + "}"
 
 
 class Sin(Unary):
     """Represents the sine of an expression."""
 
     def to_latex(self) -> str:
-        return R"\sin{ \left(" + self.expr.to_latex() + R"\right) }"
+        return R"\sin{ \left(" + self._expr.to_latex() + R"\right) }"
 
 
 class Cos(Unary):
     """Represents the cosine of an expression."""
 
     def to_latex(self) -> str:
-        return R"\cos{ \left(" + self.expr.to_latex() + R"\right) }"
+        return R"\cos{ \left(" + self._expr.to_latex() + R"\right) }"
 
 
 class Exp(Unary):
     """Represents the exponential of an expression."""
 
     def to_latex(self) -> str:
-        return R"e^{" + self.expr.to_latex() + "}"
+        return R"e^{" + self._expr.to_latex() + "}"
 
 
 class Ln(Unary):
     """Represents the natural logarithm of an expression."""
 
     def to_latex(self) -> str:
-        return R"\ln{" + self.expr.to_latex() + "}"
+        return R"\ln{" + self._expr.to_latex() + "}"
 
 
 # endregion
@@ -417,9 +397,6 @@ class Ln(Unary):
 class Binary(Expr):
     """The base class for all binary nodes in the expression tree."""
 
-    left: Expr
-    right: Expr
-
     def __init__(self, left: ExprCastable, right: ExprCastable) -> None:
         """Initialise a new binary expression.
 
@@ -427,26 +404,27 @@ class Binary(Expr):
             left: The first input to the binary expression.
             right: The second input to the binary expression.
         """
-        super().__init__(left=_to_expr(left), right=_to_expr(right))  # type: ignore
+        self._left = _to_expr(left)
+        self._right = _to_expr(right)
 
     def variables(self) -> list["Variable"]:
         """Return a list of all the variables in the expression."""
         # We need to make sure that we don't have any duplicates in the list of variables.
-        return list(set(self.left.variables() + self.right.variables()))
+        return list(set(self._left.variables() + self._right.variables()))
 
 
 class Add(Binary):
     """Represents the addition of two expressions."""
 
     def to_latex(self) -> str:
-        return f"{self.left.to_latex()} + {self.right.to_latex()}"
+        return f"{self._left.to_latex()} + {self._right.to_latex()}"
 
 
 class Sub(Binary):
     """Represents the subtraction of two expressions."""
 
     def to_latex(self) -> str:
-        return f"{self.left.to_latex()} - {self.right.to_latex()}"
+        return f"{self._left.to_latex()} - {self._right.to_latex()}"
 
 
 class Mul(Binary):
@@ -454,14 +432,11 @@ class Mul(Binary):
 
     def to_latex(self) -> str:
         # Note that we don't put a \times here; I think it leads to an uglier output.
-        return f"{self.left.to_latex()} {self.right.to_latex()}"
+        return f"{self._left.to_latex()} {self._right.to_latex()}"
 
 
 class Pow(Binary):
     """Represents the power of two expressions."""
-
-    base: Expr = Field(default=None)  # type: ignore
-    exponent: Expr = Field(default=None)  # type: ignore
 
     def __init__(self, base: ExprCastable, exponent: ExprCastable) -> None:
         """Initialise a new power expression.
@@ -471,11 +446,15 @@ class Pow(Binary):
             exponent: The exponent of the power.
         """
         # This sets self.left to base and self.right to exponent.
-        super().__init__(_to_expr(base), _to_expr(exponent))
+        super().__init__(base, exponent)
 
-        # Also keep track of base and exponent as separate attributes.
-        self.base = self.left
-        self.exponent = self.right
+    @property
+    def base(self) -> Expr:
+        return self._left
+
+    @property
+    def exponent(self) -> Expr:
+        return self._right
 
     def to_latex(self) -> str:
         return f"{self.base.to_latex()}^{{{self.exponent.to_latex()}}}"
@@ -492,11 +471,17 @@ class Log(Binary):
             base: The base of the logarithm.
         """
         # This sets self.left to arg and self.right to base.
-        super().__init__(_to_expr(arg), _to_expr(base))
+        super().__init__(arg, base)
 
-        # Also keep track of arg and base as separate attributes.
-        self.arg = self.left
-        self.base = self.right
+    @property
+    def arg(self) -> Expr:
+        """Return the argument of the logarithm."""
+        return self._left
+
+    @property
+    def base(self) -> Expr:
+        """Return the base of the logarithm."""
+        return self._right
 
     def to_latex(self) -> str:
         return R"\log_{" + self.base.to_latex() + R"}{ \left(" + self.arg.to_latex() + R"\right)}"
@@ -505,8 +490,28 @@ class Log(Binary):
 class Div(Binary):
     """Represents the division of two expressions."""
 
+    def __init__(self, numerator: ExprCastable, denominator: ExprCastable) -> None:
+        """Initialise a new division expression.
+
+        Args:
+            numerator: The numerator of the division.
+            denominator: The denominator of the division.
+        """
+        # This sets self.left to numerator and self.right to denominator.
+        super().__init__(numerator, denominator)
+
+    @property
+    def numerator(self) -> Expr:
+        """Return the numerator of the division."""
+        return self._left
+
+    @property
+    def denominator(self) -> Expr:
+        """Return the denominator of the division."""
+        return self._right
+
     def to_latex(self) -> str:
-        return R"\frac{" + self.left.to_latex() + "}{" + self.right.to_latex() + "}"
+        return R"\frac{" + self._left.to_latex() + "}{" + self._right.to_latex() + "}"
 
 
 # endregion
