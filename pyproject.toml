@@ -7,7 +7,7 @@ authors = [
     { name = "Richard Brearton", email = "richard.brearton@physics.ox.ac.uk" },
 ]
 requires-python = ">=3.12"
-dependencies = ["pydantic>=2.10.3"]
+dependencies = ["numpy>=2.2.0"]
 
 [build-system]
 requires = ["hatchling"]
@@ -33,6 +33,15 @@ unfixable = [
     "F401", # Ignore unused imports.
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"**/models.py" = ["D102"]
+
 
 [dependency-groups]
-dev = ["maturin>=1.7.7"]
+dev = [
+    "ipykernel>=6.29.5",
+    "maturin>=1.7.7",
+    "pandas>=2.2.3",
+    "plotly>=5.24.1",
+    "polars>=1.17.0",
+]
