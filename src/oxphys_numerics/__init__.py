@@ -1,20 +1,33 @@
 """The home of the oxphys_numerics python api."""
 
-from .models import Add, Constant, Cos, Div, Exp, Ln, Log, Mul, Negate, Sin, Sqrt, Sub, Variable
+from .models import (
+    Add,
+    Constant,
+    Cos,
+    Exp,
+    Fraction,
+    Ln,
+    Log,
+    Minus,
+    Mul,
+    Negate,
+    Sin,
+    Sqrt,
+    Variable,
+)
 
 __all__ = [
     "Add",
     "Constant",
     "Cos",
-    "Div",
     "Exp",
-    "ExprType",
+    "Fraction",
     "Ln",
     "Log",
+    "Minus",
     "Mul",
     "Negate",
     "Sin",
     "Sqrt",
-    "Sub",
     "Variable",
 ]
