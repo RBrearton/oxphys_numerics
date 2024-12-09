@@ -84,21 +84,21 @@ class Expr(abc.ABC):
         """
         return Add(_to_expr(other), self)
 
-    def __sub__(self, other: ExprCastable) -> "Sub":
+    def __sub__(self, other: ExprCastable) -> "Minus":
         """Subtract one expression from another.
 
         This method is used to allow the syntax `expr1 - expr2` to be used to
         create a `Sub` expression.
         """
-        return Sub(self, _to_expr(other))
+        return Minus(self, _to_expr(other))
 
-    def __rsub__(self, other: ExprCastable) -> "Sub":
+    def __rsub__(self, other: ExprCastable) -> "Minus":
         """Subtract one expression from another.
 
         This method is used to allow the syntax `expr1 - expr2` to be used to
         create a `Sub` expression.
         """
-        return Sub(_to_expr(other), self)
+        return Minus(_to_expr(other), self)
 
     def __mul__(self, other: ExprCastable) -> "Mul":
         """Multiply two expressions together.
@@ -116,21 +116,21 @@ class Expr(abc.ABC):
         """
         return Mul(_to_expr(other), self)
 
-    def __truediv__(self, other: ExprCastable) -> "Div":
+    def __truediv__(self, other: ExprCastable) -> "Fraction":
         """Divide one expression by another.
 
         This method is used to allow the syntax `expr1 / expr2` to be used to
         create a `Div` expression.
         """
-        return Div(numerator=self, denominator=_to_expr(other))
+        return Fraction(numerator=self, denominator=_to_expr(other))
 
-    def __rtruediv__(self, other: ExprCastable) -> "Div":
+    def __rtruediv__(self, other: ExprCastable) -> "Fraction":
         """Divide one expression by another.
 
         This method is used to allow the syntax `expr1 / expr2` to be used to
         create a `Div` expression.
         """
-        return Div(numerator=_to_expr(other), denominator=self)
+        return Fraction(numerator=_to_expr(other), denominator=self)
 
     def __neg__(self) -> "Negate":
         """Negate an expression.
@@ -148,21 +148,21 @@ class Expr(abc.ABC):
         """
         return self
 
-    def __pow__(self, other: ExprCastable) -> "Pow":
+    def __pow__(self, other: ExprCastable) -> "Power":
         """Raise an expression to a power.
 
         This method is used to allow the syntax `expr1 ** expr2` to be used to
         create an `Exp` expression.
         """
-        return Pow(base=self, exponent=_to_expr(other))
+        return Power(base=self, exponent=_to_expr(other))
 
-    def __rpow__(self, other: ExprCastable) -> "Pow":
+    def __rpow__(self, other: ExprCastable) -> "Power":
         """Raise an expression to a power.
 
         This method is used to allow the syntax `expr1 ** expr2` to be used to
         create an `Exp` expression.
         """
-        return Pow(base=_to_expr(other), exponent=self)
+        return Power(base=_to_expr(other), exponent=self)
 
     def __str__(self) -> str:
         """Create the string representation of the expression."""
@@ -422,7 +422,7 @@ class Add(Binary):
         return f"{self._left.to_latex()} + {self._right.to_latex()}"
 
 
-class Sub(Binary):
+class Minus(Binary):
     """Represents the subtraction of two expressions."""
 
     def to_latex(self) -> str:
@@ -437,7 +437,7 @@ class Mul(Binary):
         return f"{self._left.to_latex()} {self._right.to_latex()}"
 
 
-class Pow(Binary):
+class Power(Binary):
     """Represents the power of two expressions."""
 
     def __init__(self, base: ExprCastable, exponent: ExprCastable) -> None:
@@ -489,7 +489,7 @@ class Log(Binary):
         return R"\log_{" + self.base.to_latex() + R"}{ \left(" + self.arg.to_latex() + R"\right)}"
 
 
-class Div(Binary):
+class Fraction(Binary):
     """Represents the division of two expressions."""
 
     def __init__(self, numerator: ExprCastable, denominator: ExprCastable) -> None:
