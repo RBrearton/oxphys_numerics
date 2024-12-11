@@ -5,3 +5,6 @@ edition = "2021"
 
 [dependencies]
 polars = "0.44.2"
+cranelift-codegen = "0.95"
+cranelift-module = "0.95"
+cranelift-jit = "0.95"
