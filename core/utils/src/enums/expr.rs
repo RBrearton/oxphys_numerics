@@ -1,3 +1,6 @@
+use cranelift_codegen::ir::Value;
+use cranelift_frontend::FunctionBuilder;
+
 use crate::{
     errors::{
         expression_error::ExpressionError, length_mismatch_error::LengthMismatchError,
@@ -21,6 +24,14 @@ impl Expression for Expr {
             Expr::Leaf(leaf) => leaf.evaluate(variables),
             Expr::Unary(unary) => unary.evaluate(variables),
             Expr::Binary(binary) => binary.evaluate(variables),
+        }
+    }
+
+    fn build_jit(&self, builder: &mut FunctionBuilder) -> Value {
+        match self {
+            Expr::Leaf(leaf) => leaf.build_jit(builder),
+            Expr::Unary(unary) => unary.build_jit(builder),
+            Expr::Binary(binary) => binary.build_jit(builder),
         }
     }
 }
