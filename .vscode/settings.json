@@ -10,6 +10,8 @@
     "exponentiate",
     "exponentiates",
     "fadd",
+    "fmul",
+    "fneg",
     "libcall",
     "maturin",
     "ndarray",

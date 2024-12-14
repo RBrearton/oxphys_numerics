@@ -1,6 +1,6 @@
-use crate::traits::expression::Expression;
-
 use super::expr::Expr;
+use crate::traits::expression::Expression;
+use cranelift_codegen::ir::InstBuilder;
 
 /// # BinaryNode
 /// A node that has exactly two child nodes.
@@ -22,6 +22,25 @@ impl Expression for BinaryNode {
                 base.evaluate(variables).powf(exponent.evaluate(variables))
             }
             BinaryNode::Log(base, inner) => inner.evaluate(variables).log(base.evaluate(variables)),
+        }
+    }
+
+    fn build_jit(
+        &self,
+        builder: &mut cranelift_frontend::FunctionBuilder,
+    ) -> cranelift_codegen::ir::Value {
+        match self {
+            BinaryNode::Add(left, right) => {
+                let left = left.build_jit(builder);
+                let right = right.build_jit(builder);
+                builder.ins().fadd(left, right)
+            }
+            BinaryNode::Multiply(left, right) => {
+                let left = left.build_jit(builder);
+                let right = right.build_jit(builder);
+                builder.ins().fmul(left, right)
+            }
+            _ => unimplemented!(),
         }
     }
 }
