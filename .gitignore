@@ -1,5 +1,8 @@
 /target
 
+# VS Code
+launch.json
+
 # Some specific lock files.
 core/pybindings/Cargo.lock
 core/pybindings/uv.lock
