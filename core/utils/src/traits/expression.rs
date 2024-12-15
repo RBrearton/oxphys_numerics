@@ -58,16 +58,8 @@ pub trait Expression {
         // Build the function IR.
         {
             let mut builder = FunctionBuilder::new(&mut ctx.func, &mut func_ctx);
-            let entry_block = builder.create_block();
-            builder.append_block_params_for_function_params(entry_block);
-            builder.switch_to_block(entry_block);
-            builder.seal_block(entry_block);
-
-            let x = builder.block_params(entry_block)[0];
-            let one = builder.ins().f64const(1.0);
-            let added = builder.ins().fadd(x, one);
-
-            builder.ins().return_(&[added]);
+            let return_value = self.build_jit(&mut builder);
+            builder.ins().return_(&[return_value]);
             builder.finalize();
         }
 
