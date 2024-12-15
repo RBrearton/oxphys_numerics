@@ -7,6 +7,7 @@ use cranelift_codegen::ir::{InstBuilder, Value};
 pub enum BinaryNode {
     Add(Box<Expr>, Box<Expr>),      // Binary operation: addition.
     Multiply(Box<Expr>, Box<Expr>), // Binary operation: multiplication.
+    Frac(Box<Expr>, Box<Expr>),     // Binary operation: division.
     Pow(Box<Expr>, Box<Expr>),      // Binary operation: exponentiation.
     Log(Box<Expr>, Box<Expr>),      // Binary operation: logarithm.
 }
@@ -18,6 +19,7 @@ impl BinaryNode {
         match self {
             BinaryNode::Add(left, _) => left,
             BinaryNode::Multiply(left, _) => left,
+            BinaryNode::Frac(left, _) => left,
             BinaryNode::Pow(left, _) => left,
             BinaryNode::Log(left, _) => left,
         }
@@ -29,6 +31,7 @@ impl BinaryNode {
         match self {
             BinaryNode::Add(_, right) => right,
             BinaryNode::Multiply(_, right) => right,
+            BinaryNode::Frac(_, right) => right,
             BinaryNode::Pow(_, right) => right,
             BinaryNode::Log(_, right) => right,
         }
@@ -44,6 +47,9 @@ impl Expression for BinaryNode {
             }
             BinaryNode::Pow(base, exponent) => {
                 base.evaluate(variables).powf(exponent.evaluate(variables))
+            }
+            BinaryNode::Frac(numerator, denominator) => {
+                numerator.evaluate(variables) / denominator.evaluate(variables)
             }
             BinaryNode::Log(base, inner) => inner.evaluate(variables).log(base.evaluate(variables)),
         }
@@ -64,6 +70,11 @@ impl Expression for BinaryNode {
                 let left = left.build_jit(builder, parameters);
                 let right = right.build_jit(builder, parameters);
                 builder.ins().fmul(left, right)
+            }
+            BinaryNode::Frac(left, right) => {
+                let left = left.build_jit(builder, parameters);
+                let right = right.build_jit(builder, parameters);
+                builder.ins().fdiv(left, right)
             }
             _ => unimplemented!(),
         }
@@ -106,6 +117,19 @@ mod tests {
 
         let values = vec![3.0, 4.0];
         assert_eq!(f(values.as_ptr(), values.len()), 12.0);
+    }
+
+    #[test]
+    fn test_compiled_frac() {
+        let f = BinaryNode::Frac(
+            Box::new(Expr::Leaf(LeafNode::Variable(0))),
+            Box::new(Expr::Leaf(LeafNode::Variable(1))),
+        )
+        .compile()
+        .unwrap();
+
+        let values = vec![3.0, 4.0];
+        assert_eq!(f(values.as_ptr(), values.len()), 0.75);
     }
 
     #[test]
