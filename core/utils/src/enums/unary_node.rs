@@ -66,11 +66,35 @@ mod tests {
 
     #[test]
     fn test_evaluate() {
-        // Set up the variables hashmap.
+        // Set up the variables vector.
         let variables = vec![1.0, 2.0, 3.0];
 
         // f(x) = -x
         let expr = UnaryNode::Negate(Box::new(Expr::Leaf(LeafNode::Variable(1))));
         assert_eq!(expr.evaluate(&variables), -2.0);
+    }
+
+    #[test]
+    fn test_compiled_negate() {
+        // Set up the variables vector.
+        let variables = vec![15.0];
+
+        // f(x) = -x
+        let expr = UnaryNode::Negate(Box::new(Expr::Leaf(LeafNode::Variable(0))));
+        let f = expr.compile().unwrap();
+
+        assert_eq!(f(variables.as_ptr(), variables.len()), -15.0);
+    }
+
+    #[test]
+    fn test_compiled_sqrt() {
+        // Set up the variables vector.
+        let variables = vec![16.0];
+
+        // f(x) = sqrt(x)
+        let expr = UnaryNode::Sqrt(Box::new(Expr::Leaf(LeafNode::Variable(0))));
+        let f = expr.compile().unwrap();
+
+        assert_eq!(f(variables.as_ptr(), variables.len()), 4.0);
     }
 }
