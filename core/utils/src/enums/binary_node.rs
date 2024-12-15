@@ -121,12 +121,18 @@ mod tests {
 
     #[test]
     fn test_evaluated_multiply() {
-        let f = BinaryNode::Multiply(
+        let func_1 = BinaryNode::Multiply(
             Box::new(Expr::Leaf(LeafNode::Variable(0))),
             Box::new(Expr::Leaf(LeafNode::Variable(1))),
         );
+        let func_2 = BinaryNode::Multiply(
+            Box::new(Expr::Leaf(LeafNode::Variable(0))),
+            Box::new(Expr::Leaf(LeafNode::Constant(2.))),
+        );
 
-        let values = vec![3.0, 4.0];
-        assert_eq!(f.evaluate(&values), 12.0);
+        let values_1 = vec![3.0, 4.0];
+        let values_2 = vec![3.0];
+        assert_eq!(func_1.evaluate(&values_1), 12.0);
+        assert_eq!(func_2.evaluate(&values_2), 6.0);
     }
 }
