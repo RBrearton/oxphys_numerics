@@ -70,4 +70,24 @@ mod tests {
         let values = vec![];
         assert_eq!(f(values.as_ptr(), values.len()), 2.0);
     }
+
+    #[test]
+    fn test_evaluate_variable() {
+        // Set up the variables hashmap.
+        let variables = vec![1.0, 2.0, 3.0];
+
+        // f(x) = x
+        let expr = LeafNode::Variable(1);
+        assert_eq!(expr.evaluate(&variables), 2.0);
+    }
+
+    #[test]
+    fn test_evaluate_constant() {
+        // Set up the variables hashmap.
+        let variables = vec![1.0, 2.0, 3.0];
+
+        // f(x) = 2
+        let expr = LeafNode::Constant(2.0);
+        assert_eq!(expr.evaluate(&variables), 2.0);
+    }
 }
