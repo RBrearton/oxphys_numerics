@@ -75,3 +75,58 @@ impl Expression for BinaryNode {
             .max(self.right().num_variables())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::enums::leaf_node::LeafNode;
+
+    use super::*;
+
+    #[test]
+    fn test_compiled_add() {
+        let f = BinaryNode::Add(
+            Box::new(Expr::Leaf(LeafNode::Variable(0))),
+            Box::new(Expr::Leaf(LeafNode::Variable(1))),
+        )
+        .compile()
+        .unwrap();
+
+        let values = vec![1.0, 2.0];
+        assert_eq!(f(values.as_ptr(), values.len()), 3.0);
+    }
+
+    #[test]
+    fn test_compiled_multiply() {
+        let f = BinaryNode::Multiply(
+            Box::new(Expr::Leaf(LeafNode::Variable(0))),
+            Box::new(Expr::Leaf(LeafNode::Variable(1))),
+        )
+        .compile()
+        .unwrap();
+
+        let values = vec![3.0, 4.0];
+        assert_eq!(f(values.as_ptr(), values.len()), 12.0);
+    }
+
+    #[test]
+    fn test_evaluated_add() {
+        let f = BinaryNode::Add(
+            Box::new(Expr::Leaf(LeafNode::Variable(0))),
+            Box::new(Expr::Leaf(LeafNode::Variable(1))),
+        );
+
+        let values = vec![1.0, 2.0];
+        assert_eq!(f.evaluate(&values), 3.0);
+    }
+
+    #[test]
+    fn test_evaluated_multiply() {
+        let f = BinaryNode::Multiply(
+            Box::new(Expr::Leaf(LeafNode::Variable(0))),
+            Box::new(Expr::Leaf(LeafNode::Variable(1))),
+        );
+
+        let values = vec![3.0, 4.0];
+        assert_eq!(f.evaluate(&values), 12.0);
+    }
+}
