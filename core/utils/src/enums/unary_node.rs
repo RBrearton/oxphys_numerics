@@ -43,9 +43,9 @@ impl Expression for UnaryNode {
         }
     }
 
-    fn build_jit(&self, builder: &mut FunctionBuilder) -> Value {
+    fn build_jit(&self, builder: &mut FunctionBuilder, parameters: &[Value]) -> Value {
         // Start by building the inner expression.
-        let input = self.inner().build_jit(builder);
+        let input = self.inner().build_jit(builder, parameters);
 
         match self {
             UnaryNode::Negate(_) => builder.ins().fneg(input),

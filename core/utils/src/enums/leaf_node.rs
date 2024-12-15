@@ -1,5 +1,7 @@
 use crate::traits::expression::Expression;
-use cranelift_codegen::ir::InstBuilder;
+use cranelift_codegen::ir::{types, MemFlags};
+use cranelift_codegen::ir::{InstBuilder, Value};
+use cranelift_frontend::FunctionBuilder;
 
 /// # LeafExpr
 /// An enum that represents the different types of leaf expressions that can be used in the
@@ -19,19 +21,20 @@ impl Expression for LeafNode {
         }
     }
 
-    fn build_jit(
-        &self,
-        builder: &mut cranelift_frontend::FunctionBuilder,
-    ) -> cranelift_codegen::ir::Value {
+    fn build_jit(&self, builder: &mut FunctionBuilder, parameters: &[Value]) -> Value {
         match self {
             LeafNode::Constant(value) => builder.ins().f64const(*value),
             LeafNode::Variable(idx) => {
-                let entry_block = builder.create_block();
-                builder.append_block_params_for_function_params(entry_block);
-                builder.switch_to_block(entry_block);
-                builder.seal_block(entry_block);
+                let args_ptr = parameters[0]; // *const f64
 
-                builder.block_params(entry_block)[0]
+                // We want to load the i-th argument (0-based index).
+                let i = *idx;
+                let arg_offset = (i * 8) as i32; // Each f64 is 8 bytes
+
+                // Load the i-th argument from the arguments pointer.
+                builder
+                    .ins()
+                    .load(types::F64, MemFlags::new(), args_ptr, arg_offset)
             }
         }
     }
@@ -49,10 +52,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_expression() {
-        let f = LeafNode::Variable(1).compile().unwrap();
-        assert_eq!(f(1.0), 1.0);
-        assert_eq!(f(2.0), 2.0);
-        assert_eq!(f(3.0), 3.0);
+    fn test_expression_1_variable() {
+        let f = LeafNode::Variable(0).compile().unwrap();
+        // Create an array of f64 values.
+        let values_1 = vec![1.0];
+        let values_2 = vec![2.0];
+        let values_3 = vec![3.0];
+
+        assert_eq!(f(values_1.as_ptr(), values_1.len()), 1.0);
+        assert_eq!(f(values_2.as_ptr(), values_2.len()), 2.0);
+        assert_eq!(f(values_3.as_ptr(), values_3.len()), 3.0);
+    }
+
+    #[test]
+    fn test_expression_constant() {
+        let f = LeafNode::Constant(2.0).compile().unwrap();
+        let values = vec![];
+        assert_eq!(f(values.as_ptr(), values.len()), 2.0);
     }
 }

@@ -27,11 +27,11 @@ impl Expression for Expr {
         }
     }
 
-    fn build_jit(&self, builder: &mut FunctionBuilder) -> Value {
+    fn build_jit(&self, builder: &mut FunctionBuilder, parameters: &[Value]) -> Value {
         match self {
-            Expr::Leaf(leaf) => leaf.build_jit(builder),
-            Expr::Unary(unary) => unary.build_jit(builder),
-            Expr::Binary(binary) => binary.build_jit(builder),
+            Expr::Leaf(leaf) => leaf.build_jit(builder, parameters),
+            Expr::Unary(unary) => unary.build_jit(builder, parameters),
+            Expr::Binary(binary) => binary.build_jit(builder, parameters),
         }
     }
 
