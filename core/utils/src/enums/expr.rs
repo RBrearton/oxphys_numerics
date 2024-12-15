@@ -34,6 +34,14 @@ impl Expression for Expr {
             Expr::Binary(binary) => binary.build_jit(builder),
         }
     }
+
+    fn num_variables(&self) -> usize {
+        match self {
+            Expr::Leaf(leaf) => leaf.num_variables(),
+            Expr::Unary(unary) => unary.num_variables(),
+            Expr::Binary(binary) => binary.num_variables(),
+        }
+    }
 }
 
 impl Expr {

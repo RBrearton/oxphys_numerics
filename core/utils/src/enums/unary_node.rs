@@ -53,6 +53,10 @@ impl Expression for UnaryNode {
             _ => unimplemented!(),
         }
     }
+
+    fn num_variables(&self) -> usize {
+        self.inner().num_variables()
+    }
 }
 
 #[cfg(test)]

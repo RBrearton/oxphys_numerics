@@ -67,4 +67,10 @@ impl Expression for BinaryNode {
             _ => unimplemented!(),
         }
     }
+
+    fn num_variables(&self) -> usize {
+        self.left()
+            .num_variables()
+            .max(self.right().num_variables())
+    }
 }

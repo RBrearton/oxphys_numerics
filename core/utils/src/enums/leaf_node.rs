@@ -7,8 +7,8 @@ use cranelift_codegen::ir::InstBuilder;
 ///
 /// Being a leaf node, this node has no children.
 pub enum LeafNode {
-    Constant(f64), // Leaf node: a constant value.
-    Variable(usize),
+    Constant(f64),   // Leaf node: a constant value.
+    Variable(usize), // The usize is the index of the variable in the input vector.
 }
 
 impl Expression for LeafNode {
@@ -35,6 +35,13 @@ impl Expression for LeafNode {
             }
         }
     }
+
+    fn num_variables(&self) -> usize {
+        match self {
+            LeafNode::Constant(_) => 0,
+            LeafNode::Variable(idx) => *idx + 1,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -43,9 +50,9 @@ mod tests {
 
     #[test]
     fn test_expression() {
-        let f = LeafNode::Constant(2.).compile().unwrap();
-        assert_eq!(f(1.0), 2.0);
+        let f = LeafNode::Variable(1).compile().unwrap();
+        assert_eq!(f(1.0), 1.0);
         assert_eq!(f(2.0), 2.0);
-        assert_eq!(f(3.0), 2.0);
+        assert_eq!(f(3.0), 3.0);
     }
 }
