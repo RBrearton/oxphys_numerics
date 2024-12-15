@@ -8,7 +8,7 @@ use cranelift_module::{Linkage, Module};
 use cranelift_native;
 
 /// Type alias for a compiled expression function that maps `f64` to `f64`.
-pub type CompiledExpression = fn(f64) -> f64;
+pub type CompiledExpression = fn(*const f64, usize) -> f64;
 
 /// # Expression
 /// This defines everything that we expect from our data structures that represent mathematical
@@ -24,7 +24,7 @@ pub trait Expression {
 
     /// # Build jit
     /// Given a jit function builder, add this expression to the function builder.
-    fn build_jit(&self, builder: &mut FunctionBuilder) -> Value;
+    fn build_jit(&self, builder: &mut FunctionBuilder, parameters: &[Value]) -> Value;
 
     /// # Number of variables
     /// Get the number of independent variables in the expression. This can be easily figured out
@@ -48,34 +48,65 @@ pub trait Expression {
         let jit_builder = JITBuilder::with_isa(isa, cranelift_module::default_libcall_names());
         let mut module = JITModule::new(jit_builder);
 
-        // Create the function signature f(x: f64) -> f64
-        let mut sig = Signature::new(CallConv::triple_default(module.isa().triple()));
-        sig.params.push(AbiParam::new(types::F64));
-        sig.returns.push(AbiParam::new(types::F64));
+        // Create the function signature f([x1, x2, ...], len(array)) -> f64.
+        let mut function_signature =
+            Signature::new(CallConv::triple_default(module.isa().triple()));
 
-        let func_id = module.declare_function("f", Linkage::Local, &sig).unwrap();
+        // The pointer type depends on the ISA; module.isa().pointer_type() gives the correct type.
+        let ptr_type = module.isa().pointer_type();
+
+        // Add a pointer parameter and a length parameter.
+        function_signature.params.push(AbiParam::new(ptr_type));
+        function_signature.params.push(AbiParam::new(types::I64));
+
+        // Add the return value.
+        function_signature.returns.push(AbiParam::new(types::F64));
+
+        // Declare the function.
+        let function_id = module
+            .declare_function("f", Linkage::Local, &function_signature)
+            .unwrap();
 
         // Prepare the function context.
-        let mut ctx = module.make_context();
-        ctx.func.signature = sig;
-        let mut func_ctx = FunctionBuilderContext::new();
+        let mut context = module.make_context();
+        context.func.signature = function_signature;
+        let mut function_context = FunctionBuilderContext::new();
 
         // Build the function IR.
         {
-            let mut builder = FunctionBuilder::new(&mut ctx.func, &mut func_ctx);
-            let return_value = self.build_jit(&mut builder);
+            // Make the function builder.
+            let mut builder = FunctionBuilder::new(&mut context.func, &mut function_context);
+
+            // Create the entry block. This is where the function starts, and it has the parameters
+            // that we need.
+            let entry_block = builder.create_block();
+            builder.append_block_params_for_function_params(entry_block);
+            builder.switch_to_block(entry_block);
+            builder.seal_block(entry_block);
+
+            // Get the parameters.
+            let params_slice = builder.block_params(entry_block);
+
+            // Copy them into a standalone vector. This separates the lifetimes of the parameters
+            // from the lifetime of the builder, needed because we used an immutable borrow of the
+            // builder to make the parameters.
+            let parameters = params_slice.to_vec();
+
+            // Pass the parameters and the builder to the expression to build itself recursively.
+            let return_value = self.build_jit(&mut builder, &parameters);
             builder.ins().return_(&[return_value]);
             builder.finalize();
         }
 
         // Define and finalize the function.
-        module.define_function(func_id, &mut ctx).unwrap();
-        module.clear_context(&mut ctx);
+        module.define_function(function_id, &mut context).unwrap();
+        module.clear_context(&mut context);
         module.finalize_definitions().unwrap();
 
         // Get a callable function pointer.
-        let code = module.get_finalized_function(func_id);
-        let compiled_function = unsafe { std::mem::transmute::<_, fn(f64) -> f64>(code) };
+        let code = module.get_finalized_function(function_id);
+        let compiled_function =
+            unsafe { std::mem::transmute::<_, fn(*const f64, usize) -> f64>(code) };
         Ok(compiled_function)
     }
 }
