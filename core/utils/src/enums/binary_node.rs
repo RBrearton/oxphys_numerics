@@ -11,6 +11,30 @@ pub enum BinaryNode {
     Log(Box<Expr>, Box<Expr>),      // Binary operation: logarithm.
 }
 
+impl BinaryNode {
+    /// # Left
+    /// Get the left expression.
+    fn left(&self) -> &Expr {
+        match self {
+            BinaryNode::Add(left, _) => left,
+            BinaryNode::Multiply(left, _) => left,
+            BinaryNode::Pow(left, _) => left,
+            BinaryNode::Log(left, _) => left,
+        }
+    }
+
+    /// # Right
+    /// Get the right expression.
+    fn right(&self) -> &Expr {
+        match self {
+            BinaryNode::Add(_, right) => right,
+            BinaryNode::Multiply(_, right) => right,
+            BinaryNode::Pow(_, right) => right,
+            BinaryNode::Log(_, right) => right,
+        }
+    }
+}
+
 impl Expression for BinaryNode {
     fn evaluate(&self, variables: &Vec<f64>) -> f64 {
         match self {
