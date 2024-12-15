@@ -26,6 +26,11 @@ pub trait Expression {
     /// Given a jit function builder, add this expression to the function builder.
     fn build_jit(&self, builder: &mut FunctionBuilder) -> Value;
 
+    /// # Number of variables
+    /// Get the number of independent variables in the expression. This can be easily figured out
+    /// by the maximum index of the variables in the expression.
+    fn num_variables(&self) -> usize;
+
     /// # Compile
     /// Just-in-time compile the expression. This is slower than evaluate if you're only going to
     /// call the expression once, but it is *much* faster if you're going to call the expression
