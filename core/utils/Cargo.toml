@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-polars = "0.44.2"
 cranelift-codegen = "0.114"
 cranelift-module = "0.114"
 cranelift-jit = "0.114"

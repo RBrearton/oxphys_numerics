@@ -10,6 +10,7 @@
     "exponentiate",
     "exponentiates",
     "fadd",
+    "fdiv",
     "fmul",
     "fneg",
     "libcall",
