@@ -4,7 +4,7 @@ use cranelift_frontend::FunctionBuilder;
 /// # Expression compiler
 /// This trait defines all the methods that need to be implemented to make an it possible to
 /// jit-compile an expression.
-pub(crate) trait ExpressionCompiler {
+pub trait ExpressionCompiler {
     /// # Build jit 1D
     /// Given a jit function builder, add this expression to the function builder. This is called
     /// when we build an expression that takes a single f64 input.
