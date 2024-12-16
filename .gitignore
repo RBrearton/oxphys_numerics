@@ -3,6 +3,10 @@
 # VS Code
 launch.json
 
+# Jit compiler fun
+*.asm
+*.clif
+
 # Some specific lock files.
 core/pybindings/Cargo.lock
 core/pybindings/uv.lock
