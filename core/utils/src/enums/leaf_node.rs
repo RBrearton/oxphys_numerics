@@ -32,6 +32,48 @@ impl ExpressionCompiler for LeafNode {
             }
         }
     }
+
+    fn build_jit_1d(&self, builder: &mut FunctionBuilder, parameter: Value) -> Value {
+        match self {
+            LeafNode::Constant(value) => builder.ins().f64const(*value),
+            LeafNode::Variable(_) => parameter,
+        }
+    }
+
+    fn build_jit_2d(&self, builder: &mut FunctionBuilder, param_0: Value, param_1: Value) -> Value {
+        match self {
+            LeafNode::Constant(value) => builder.ins().f64const(*value),
+            LeafNode::Variable(idx) => match idx {
+                0 => param_0,
+                1 => param_1,
+                x => panic!(
+                    "Invalid variable index for 2D expression. Expected 0 or 1, got {}",
+                    x
+                ),
+            },
+        }
+    }
+
+    fn build_jit_3d(
+        &self,
+        builder: &mut FunctionBuilder,
+        param_0: Value,
+        param_1: Value,
+        param_2: Value,
+    ) -> Value {
+        match self {
+            LeafNode::Constant(value) => builder.ins().f64const(*value),
+            LeafNode::Variable(idx) => match idx {
+                0 => param_0,
+                1 => param_1,
+                2 => param_2,
+                x => panic!(
+                    "Invalid variable index for 3D expression. Expected 0, 1, or 2, got {}",
+                    x
+                ),
+            },
+        }
+    }
 }
 
 impl Expression for LeafNode {
