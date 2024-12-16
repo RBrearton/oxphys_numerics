@@ -51,6 +51,19 @@ fn main() {
     let duration = start.elapsed();
     println!("Duration: {:?}", duration);
 
+    // Now jit compiler to specifically a 2d function.
+    let f = expr.compile_2d().unwrap();
+    let start = std::time::Instant::now();
+    for _ in 0..num_iterations {
+        let mut result = f(variables[0], variables[1]);
+        unsafe {
+            ptr::write_volatile(&mut result, result);
+        }
+    }
+
+    let duration = start.elapsed();
+    println!("Duration: {:?}", duration);
+
     // Now run the native function.
     let start = std::time::Instant::now();
     for _ in 0..num_iterations {
