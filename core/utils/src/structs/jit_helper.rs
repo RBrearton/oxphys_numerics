@@ -42,7 +42,7 @@ impl JITHelper {
         // Create a new module.
         let mut module = JITModule::new(jit_builder);
 
-        // Create the function signature object,
+        // Create the function signature object, which will be used to declare the function.
         let mut function_signature =
             Signature::new(CallConv::triple_default(module.isa().triple()));
 
