@@ -1,4 +1,5 @@
 use crate::traits::expression::Expression;
+use crate::traits::expression_compiler::ExpressionCompiler;
 use cranelift_codegen::ir::{types, MemFlags};
 use cranelift_codegen::ir::{InstBuilder, Value};
 use cranelift_frontend::FunctionBuilder;
@@ -13,15 +14,8 @@ pub enum LeafNode {
     Variable(usize), // The usize is the index of the variable in the input vector.
 }
 
-impl Expression for LeafNode {
-    fn evaluate(&self, variables: &Vec<f64>) -> f64 {
-        match self {
-            LeafNode::Constant(value) => *value,
-            LeafNode::Variable(idx) => variables[*idx],
-        }
-    }
-
-    fn build_jit(&self, builder: &mut FunctionBuilder, parameters: &[Value]) -> Value {
+impl ExpressionCompiler for LeafNode {
+    fn build_jit_nd(&self, builder: &mut FunctionBuilder, parameters: &[Value]) -> Value {
         match self {
             LeafNode::Constant(value) => builder.ins().f64const(*value),
             LeafNode::Variable(idx) => {
@@ -36,6 +30,15 @@ impl Expression for LeafNode {
                     .ins()
                     .load(types::F64, MemFlags::new(), args_ptr, arg_offset)
             }
+        }
+    }
+}
+
+impl Expression for LeafNode {
+    fn evaluate(&self, variables: &Vec<f64>) -> f64 {
+        match self {
+            LeafNode::Constant(value) => *value,
+            LeafNode::Variable(idx) => variables[*idx],
         }
     }
 
@@ -53,7 +56,7 @@ mod tests {
 
     #[test]
     fn test_expression_1_variable() {
-        let f = LeafNode::Variable(0).compile().unwrap();
+        let f = LeafNode::Variable(0).compile_nd().unwrap();
         // Create an array of f64 values.
         let values_1 = vec![1.0];
         let values_2 = vec![2.0];
@@ -66,7 +69,7 @@ mod tests {
 
     #[test]
     fn test_expression_constant() {
-        let f = LeafNode::Constant(2.0).compile().unwrap();
+        let f = LeafNode::Constant(2.0).compile_nd().unwrap();
         let values = vec![];
         assert_eq!(f(values.as_ptr(), values.len()), 2.0);
     }

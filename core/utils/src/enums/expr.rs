@@ -6,7 +6,7 @@ use crate::{
         expression_error::ExpressionError, length_mismatch_error::LengthMismatchError,
         no_variable_error::NoVariableError,
     },
-    traits::expression::Expression,
+    traits::{expression::Expression, expression_compiler::ExpressionCompiler},
 };
 
 use super::{binary_node::BinaryNode, leaf_node::LeafNode, unary_node::UnaryNode};
@@ -18,20 +18,22 @@ pub enum Expr {
     Binary(BinaryNode),
 }
 
+impl ExpressionCompiler for Expr {
+    fn build_jit_nd(&self, builder: &mut FunctionBuilder, parameters: &[Value]) -> Value {
+        match self {
+            Expr::Leaf(leaf) => leaf.build_jit_nd(builder, parameters),
+            Expr::Unary(unary) => unary.build_jit_nd(builder, parameters),
+            Expr::Binary(binary) => binary.build_jit_nd(builder, parameters),
+        }
+    }
+}
+
 impl Expression for Expr {
     fn evaluate(&self, variables: &Vec<f64>) -> f64 {
         match self {
             Expr::Leaf(leaf) => leaf.evaluate(variables),
             Expr::Unary(unary) => unary.evaluate(variables),
             Expr::Binary(binary) => binary.evaluate(variables),
-        }
-    }
-
-    fn build_jit(&self, builder: &mut FunctionBuilder, parameters: &[Value]) -> Value {
-        match self {
-            Expr::Leaf(leaf) => leaf.build_jit(builder, parameters),
-            Expr::Unary(unary) => unary.build_jit(builder, parameters),
-            Expr::Binary(binary) => binary.build_jit(builder, parameters),
         }
     }
 

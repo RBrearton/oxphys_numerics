@@ -1,5 +1,5 @@
 use super::expr::Expr;
-use crate::traits::expression::Expression;
+use crate::traits::{expression::Expression, expression_compiler::ExpressionCompiler};
 use cranelift_codegen::ir::{InstBuilder, Value};
 
 /// # BinaryNode
@@ -38,6 +38,33 @@ impl BinaryNode {
     }
 }
 
+impl ExpressionCompiler for BinaryNode {
+    fn build_jit_nd(
+        &self,
+        builder: &mut cranelift_frontend::FunctionBuilder,
+        parameters: &[Value],
+    ) -> cranelift_codegen::ir::Value {
+        match self {
+            BinaryNode::Add(left, right) => {
+                let left = left.build_jit_nd(builder, parameters);
+                let right = right.build_jit_nd(builder, parameters);
+                builder.ins().fadd(left, right)
+            }
+            BinaryNode::Multiply(left, right) => {
+                let left = left.build_jit_nd(builder, parameters);
+                let right = right.build_jit_nd(builder, parameters);
+                builder.ins().fmul(left, right)
+            }
+            BinaryNode::Frac(left, right) => {
+                let left = left.build_jit_nd(builder, parameters);
+                let right = right.build_jit_nd(builder, parameters);
+                builder.ins().fdiv(left, right)
+            }
+            _ => unimplemented!(),
+        }
+    }
+}
+
 impl Expression for BinaryNode {
     fn evaluate(&self, variables: &Vec<f64>) -> f64 {
         match self {
@@ -52,31 +79,6 @@ impl Expression for BinaryNode {
                 numerator.evaluate(variables) / denominator.evaluate(variables)
             }
             BinaryNode::Log(base, inner) => inner.evaluate(variables).log(base.evaluate(variables)),
-        }
-    }
-
-    fn build_jit(
-        &self,
-        builder: &mut cranelift_frontend::FunctionBuilder,
-        parameters: &[Value],
-    ) -> cranelift_codegen::ir::Value {
-        match self {
-            BinaryNode::Add(left, right) => {
-                let left = left.build_jit(builder, parameters);
-                let right = right.build_jit(builder, parameters);
-                builder.ins().fadd(left, right)
-            }
-            BinaryNode::Multiply(left, right) => {
-                let left = left.build_jit(builder, parameters);
-                let right = right.build_jit(builder, parameters);
-                builder.ins().fmul(left, right)
-            }
-            BinaryNode::Frac(left, right) => {
-                let left = left.build_jit(builder, parameters);
-                let right = right.build_jit(builder, parameters);
-                builder.ins().fdiv(left, right)
-            }
-            _ => unimplemented!(),
         }
     }
 
@@ -99,7 +101,7 @@ mod tests {
             Box::new(Expr::Leaf(LeafNode::Variable(0))),
             Box::new(Expr::Leaf(LeafNode::Variable(1))),
         )
-        .compile()
+        .compile_nd()
         .unwrap();
 
         let values = vec![1.0, 2.0];
@@ -112,7 +114,7 @@ mod tests {
             Box::new(Expr::Leaf(LeafNode::Variable(0))),
             Box::new(Expr::Leaf(LeafNode::Variable(1))),
         )
-        .compile()
+        .compile_nd()
         .unwrap();
 
         let values = vec![3.0, 4.0];
@@ -125,7 +127,7 @@ mod tests {
             Box::new(Expr::Leaf(LeafNode::Variable(0))),
             Box::new(Expr::Leaf(LeafNode::Variable(1))),
         )
-        .compile()
+        .compile_nd()
         .unwrap();
 
         let values = vec![3.0, 4.0];

@@ -1,4 +1,5 @@
 use crate::traits::expression::Expression;
+use crate::traits::expression_compiler::ExpressionCompiler;
 use cranelift_codegen::ir::InstBuilder;
 use cranelift_codegen::ir::Value;
 use cranelift_frontend::FunctionBuilder;
@@ -31,6 +32,19 @@ impl UnaryNode {
     }
 }
 
+impl ExpressionCompiler for UnaryNode {
+    fn build_jit_nd(&self, builder: &mut FunctionBuilder, parameters: &[Value]) -> Value {
+        // Start by building the inner expression.
+        let input = self.inner().build_jit_nd(builder, parameters);
+
+        match self {
+            UnaryNode::Negate(_) => builder.ins().fneg(input),
+            UnaryNode::Sqrt(_) => builder.ins().sqrt(input),
+            _ => unimplemented!(),
+        }
+    }
+}
+
 impl Expression for UnaryNode {
     fn evaluate(&self, variables: &Vec<f64>) -> f64 {
         match self {
@@ -40,17 +54,6 @@ impl Expression for UnaryNode {
             UnaryNode::Cos(inner) => inner.evaluate(variables).cos(),
             UnaryNode::Exp(inner) => inner.evaluate(variables).exp(),
             UnaryNode::Ln(inner) => inner.evaluate(variables).ln(),
-        }
-    }
-
-    fn build_jit(&self, builder: &mut FunctionBuilder, parameters: &[Value]) -> Value {
-        // Start by building the inner expression.
-        let input = self.inner().build_jit(builder, parameters);
-
-        match self {
-            UnaryNode::Negate(_) => builder.ins().fneg(input),
-            UnaryNode::Sqrt(_) => builder.ins().sqrt(input),
-            _ => unimplemented!(),
         }
     }
 
@@ -81,7 +84,7 @@ mod tests {
 
         // f(x) = -x
         let expr = UnaryNode::Negate(Box::new(Expr::Leaf(LeafNode::Variable(0))));
-        let f = expr.compile().unwrap();
+        let f = expr.compile_nd().unwrap();
 
         assert_eq!(f(variables.as_ptr(), variables.len()), -15.0);
     }
@@ -93,7 +96,7 @@ mod tests {
 
         // f(x) = sqrt(x)
         let expr = UnaryNode::Sqrt(Box::new(Expr::Leaf(LeafNode::Variable(0))));
-        let f = expr.compile().unwrap();
+        let f = expr.compile_nd().unwrap();
 
         assert_eq!(f(variables.as_ptr(), variables.len()), 4.0);
     }
