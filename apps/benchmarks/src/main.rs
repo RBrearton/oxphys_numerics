@@ -12,15 +12,16 @@ fn native_expression(x: f64, y: f64) -> f64 {
 
 fn main() {
     // Set up the expression.
-    let var_0 = Expr::Leaf(LeafNode::Variable(0));
-    let var_1 = Expr::Leaf(LeafNode::Variable(1));
+    let x = Expr::Leaf(LeafNode::Variable(0));
+    let y = Expr::Leaf(LeafNode::Variable(1));
     let pi = Expr::Leaf(LeafNode::Constant(consts::PI));
-    let two = Expr::Leaf(LeafNode::Constant(2.0));
-    let variables = vec![1.0, 2.0];
-    let pi_over_two = Expr::Binary(BinaryNode::Frac(Box::new(pi), Box::new(two)));
-    let sqrt_argument = Expr::Binary(BinaryNode::Multiply(Box::new(pi_over_two), Box::new(var_0)));
+    let pi_over_y = Expr::Binary(BinaryNode::Frac(Box::new(pi), Box::new(y.clone())));
+    let sqrt_argument = Expr::Binary(BinaryNode::Multiply(Box::new(pi_over_y), Box::new(x)));
     let sqrt = Expr::Unary(UnaryNode::Sqrt(Box::new(sqrt_argument)));
-    let expr = Expr::Binary(BinaryNode::Multiply(Box::new(sqrt), Box::new(var_1)));
+    let expr = Expr::Binary(BinaryNode::Multiply(Box::new(sqrt), Box::new(y)));
+
+    // The values that we'll give to x and y.
+    let variables = vec![1.0, 2.0];
 
     // Evaluate the expression using .evaluate().
     let start = std::time::Instant::now();
