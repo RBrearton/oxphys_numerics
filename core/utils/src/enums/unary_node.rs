@@ -30,18 +30,47 @@ impl UnaryNode {
             UnaryNode::Ln(inner) => inner,
         }
     }
-}
 
-impl ExpressionCompiler for UnaryNode {
-    fn build_jit_nd(&self, builder: &mut FunctionBuilder, parameters: &[Value]) -> Value {
-        // Start by building the inner expression.
-        let input = self.inner().build_jit_nd(builder, parameters);
-
+    fn expression_value(&self, builder: &mut FunctionBuilder<'_>, input: Value) -> Value {
         match self {
             UnaryNode::Negate(_) => builder.ins().fneg(input),
             UnaryNode::Sqrt(_) => builder.ins().sqrt(input),
             _ => unimplemented!(),
         }
+    }
+}
+
+impl ExpressionCompiler for UnaryNode {
+    fn build_jit_nd(&self, builder: &mut FunctionBuilder, parameters: &[Value]) -> Value {
+        // Start by building the inner expression, then apply the unary operation.
+        let input = self.inner().build_jit_nd(builder, parameters);
+        self.expression_value(builder, input)
+    }
+
+    fn build_jit_1d(&self, builder: &mut FunctionBuilder, parameter: Value) -> Value {
+        // Start by building the inner expression, then apply the unary operation.
+        let input = self.inner().build_jit_1d(builder, parameter);
+        self.expression_value(builder, input)
+    }
+
+    fn build_jit_2d(&self, builder: &mut FunctionBuilder, param_0: Value, param_1: Value) -> Value {
+        // Start by building the inner expression, then apply the unary operation.
+        let input = self.inner().build_jit_2d(builder, param_0, param_1);
+        self.expression_value(builder, input)
+    }
+
+    fn build_jit_3d(
+        &self,
+        builder: &mut FunctionBuilder,
+        param_0: Value,
+        param_1: Value,
+        param_2: Value,
+    ) -> Value {
+        // Start by building the inner expression, then apply the unary operation.
+        let input = self
+            .inner()
+            .build_jit_3d(builder, param_0, param_1, param_2);
+        self.expression_value(builder, input)
     }
 }
 

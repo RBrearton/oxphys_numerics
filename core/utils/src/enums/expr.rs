@@ -26,6 +26,36 @@ impl ExpressionCompiler for Expr {
             Expr::Binary(binary) => binary.build_jit_nd(builder, parameters),
         }
     }
+
+    fn build_jit_1d(&self, builder: &mut FunctionBuilder, parameter: Value) -> Value {
+        match self {
+            Expr::Leaf(leaf) => leaf.build_jit_1d(builder, parameter),
+            Expr::Unary(unary) => unary.build_jit_1d(builder, parameter),
+            Expr::Binary(binary) => binary.build_jit_1d(builder, parameter),
+        }
+    }
+
+    fn build_jit_2d(&self, builder: &mut FunctionBuilder, param_0: Value, param_1: Value) -> Value {
+        match self {
+            Expr::Leaf(leaf) => leaf.build_jit_2d(builder, param_0, param_1),
+            Expr::Unary(unary) => unary.build_jit_2d(builder, param_0, param_1),
+            Expr::Binary(binary) => binary.build_jit_2d(builder, param_0, param_1),
+        }
+    }
+
+    fn build_jit_3d(
+        &self,
+        builder: &mut FunctionBuilder,
+        param_0: Value,
+        param_1: Value,
+        param_2: Value,
+    ) -> Value {
+        match self {
+            Expr::Leaf(leaf) => leaf.build_jit_3d(builder, param_0, param_1, param_2),
+            Expr::Unary(unary) => unary.build_jit_3d(builder, param_0, param_1, param_2),
+            Expr::Binary(binary) => binary.build_jit_3d(builder, param_0, param_1, param_2),
+        }
+    }
 }
 
 impl Expression for Expr {

@@ -36,6 +36,20 @@ impl BinaryNode {
             BinaryNode::Log(_, right) => right,
         }
     }
+
+    fn expression_value(
+        &self,
+        builder: &mut cranelift_frontend::FunctionBuilder<'_>,
+        left_value: Value,
+        right_value: Value,
+    ) -> Value {
+        match self {
+            BinaryNode::Add(_, _) => builder.ins().fadd(left_value, right_value),
+            BinaryNode::Multiply(_, _) => builder.ins().fmul(left_value, right_value),
+            BinaryNode::Frac(_, _) => builder.ins().fdiv(left_value, right_value),
+            _ => unimplemented!(),
+        }
+    }
 }
 
 impl ExpressionCompiler for BinaryNode {
@@ -44,24 +58,48 @@ impl ExpressionCompiler for BinaryNode {
         builder: &mut cranelift_frontend::FunctionBuilder,
         parameters: &[Value],
     ) -> cranelift_codegen::ir::Value {
-        match self {
-            BinaryNode::Add(left, right) => {
-                let left = left.build_jit_nd(builder, parameters);
-                let right = right.build_jit_nd(builder, parameters);
-                builder.ins().fadd(left, right)
-            }
-            BinaryNode::Multiply(left, right) => {
-                let left = left.build_jit_nd(builder, parameters);
-                let right = right.build_jit_nd(builder, parameters);
-                builder.ins().fmul(left, right)
-            }
-            BinaryNode::Frac(left, right) => {
-                let left = left.build_jit_nd(builder, parameters);
-                let right = right.build_jit_nd(builder, parameters);
-                builder.ins().fdiv(left, right)
-            }
-            _ => unimplemented!(),
-        }
+        // Start by building the left and right Values, then apply the binary operation.
+        let left_value = self.left().build_jit_nd(builder, parameters);
+        let right_value = self.right().build_jit_nd(builder, parameters);
+        self.expression_value(builder, left_value, right_value)
+    }
+
+    fn build_jit_1d(
+        &self,
+        builder: &mut cranelift_frontend::FunctionBuilder,
+        parameter: Value,
+    ) -> Value {
+        // Start by building the left and right Values, then apply the binary operation.
+        let left_value = self.left().build_jit_1d(builder, parameter);
+        let right_value = self.right().build_jit_1d(builder, parameter);
+        self.expression_value(builder, left_value, right_value)
+    }
+
+    fn build_jit_2d(
+        &self,
+        builder: &mut cranelift_frontend::FunctionBuilder,
+        param_0: Value,
+        param_1: Value,
+    ) -> Value {
+        // Start by building the left and right Values, then apply the binary operation.
+        let left_value = self.left().build_jit_2d(builder, param_0, param_1);
+        let right_value = self.right().build_jit_2d(builder, param_0, param_1);
+        self.expression_value(builder, left_value, right_value)
+    }
+
+    fn build_jit_3d(
+        &self,
+        builder: &mut cranelift_frontend::FunctionBuilder,
+        param_0: Value,
+        param_1: Value,
+        param_2: Value,
+    ) -> Value {
+        // Start by building the left and right Values, then apply the binary operation.
+        let left_value = self.left().build_jit_3d(builder, param_0, param_1, param_2);
+        let right_value = self
+            .right()
+            .build_jit_3d(builder, param_0, param_1, param_2);
+        self.expression_value(builder, left_value, right_value)
     }
 }
 
