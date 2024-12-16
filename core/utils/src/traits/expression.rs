@@ -1,19 +1,27 @@
 use crate::errors::expr_parsing_error::ExprParsingError;
-use cranelift_codegen::ir::{types, Value};
-use cranelift_codegen::ir::{AbiParam, InstBuilder, Signature};
-use cranelift_codegen::isa::CallConv;
-use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
-use cranelift_jit::{JITBuilder, JITModule};
-use cranelift_module::{Linkage, Module};
-use cranelift_native;
+use crate::structs::instruction_set_architecture::InstructionSetArchitecture;
+use crate::structs::jit_helper::JITHelper;
+use cranelift_codegen::ir::types;
+use cranelift_codegen::ir::InstBuilder;
 
-/// Type alias for a compiled expression function that maps `f64` to `f64`.
-pub type CompiledExpression = fn(*const f64, usize) -> f64;
+use super::expression_compiler::ExpressionCompiler;
+
+/// Type alias for a compiled expression function that maps a single `f64` to a single `f64`.
+pub type CompiledExpression1D = fn(f64) -> f64;
+
+/// Type alias for a compiled expression function that maps two `f64`s to a single `f64`.
+pub type CompiledExpression2D = fn(f64, f64) -> f64;
+
+/// Type alias for a compiled expression function that maps three `f64`s to a single `f64`.
+pub type CompiledExpression3D = fn(f64, f64, f64) -> f64;
+
+/// Type alias for a compiled expression function that maps an array of `f64`s to a single `f64`.
+pub type CompiledExpressionND = fn(*const f64, usize) -> f64;
 
 /// # Expression
 /// This defines everything that we expect from our data structures that represent mathematical
 /// expressions.
-pub trait Expression {
+pub trait Expression: ExpressionCompiler {
     /// # Evaluate
     /// Run the expression with the given variables and return the result.
     ///
@@ -21,10 +29,6 @@ pub trait Expression {
     /// If performance is critical, please consider compiling the expression with the `compile`
     /// function and calling the compiled function directly.
     fn evaluate(&self, variables: &Vec<f64>) -> f64;
-
-    /// # Build jit
-    /// Given a jit function builder, add this expression to the function builder.
-    fn build_jit(&self, builder: &mut FunctionBuilder, parameters: &[Value]) -> Value;
 
     /// # Number of variables
     /// Get the number of independent variables in the expression. This can be easily figured out
@@ -35,50 +39,20 @@ pub trait Expression {
     /// Just-in-time compile the expression. This is slower than evaluate if you're only going to
     /// call the expression once, but it is *much* faster if you're going to call the expression
     /// many times.
-    fn compile(&self) -> Result<CompiledExpression, ExprParsingError> {
-        // Use cranelift_native to configure ISA for your current platform (e.g. Apple Silicon).
-        let isa_builder = cranelift_native::builder().expect("Failed to create ISA builder");
+    fn compile_nd(&self) -> Result<CompiledExpressionND, ExprParsingError> {
+        // One of our function's parameters is a pointer. Because these are ISA dependent, start by
+        // making an InstructionSetArchitecture instance for our platform.
+        let isa = InstructionSetArchitecture::current_platform();
 
-        // Create a default flags builder and manually pass in the opt_level "speed" flag. We're
-        // generally very performance sensitive here, so we'll always want the most aggressive
-        // optimization level here.
-        let mut flag_builder = cranelift_codegen::settings::builder();
-        flag_builder.set("opt_level", "speed").unwrap();
-        let flags = cranelift_codegen::settings::Flags::new(flag_builder);
-        let isa = isa_builder.finish(flags).expect("Failed to create ISA");
-
-        // Create a JIT builder with the appropriate ISA.
-        let jit_builder = JITBuilder::with_isa(isa, cranelift_module::default_libcall_names());
-        let mut module = JITModule::new(jit_builder);
-
-        // Create the function signature f([x1, x2, ...], len(array)) -> f64.
-        let mut function_signature =
-            Signature::new(CallConv::triple_default(module.isa().triple()));
-
-        // The pointer type depends on the ISA; module.isa().pointer_type() gives the correct type.
-        let ptr_type = module.isa().pointer_type();
-
-        // Add a pointer parameter and a length parameter.
-        function_signature.params.push(AbiParam::new(ptr_type));
-        function_signature.params.push(AbiParam::new(types::I64));
-
-        // Add the return value.
-        function_signature.returns.push(AbiParam::new(types::F64));
-
-        // Declare the function.
-        let function_id = module
-            .declare_function("f", Linkage::Local, &function_signature)
-            .unwrap();
-
-        // Prepare the function context.
-        let mut context = module.make_context();
-        context.func.signature = function_signature;
-        let mut function_context = FunctionBuilderContext::new();
+        // Prepare our input arguments, then make a JITHelper.
+        let parameters = vec![isa.pointer_type(), types::I64];
+        let return_type = types::F64;
+        let mut jit_helper = JITHelper::new(isa, parameters, return_type);
 
         // Build the function IR.
         {
             // Make the function builder.
-            let mut builder = FunctionBuilder::new(&mut context.func, &mut function_context);
+            let mut builder = jit_helper.function_builder();
 
             // Create the entry block. This is where the function starts, and it has the parameters
             // that we need.
@@ -96,18 +70,13 @@ pub trait Expression {
             let parameters = params_slice.to_vec();
 
             // Pass the parameters and the builder to the expression to build itself recursively.
-            let return_value = self.build_jit(&mut builder, &parameters);
+            let return_value = self.build_jit_nd(&mut builder, &parameters);
             builder.ins().return_(&[return_value]);
             builder.finalize();
         }
 
-        // Define and finalize the function.
-        module.define_function(function_id, &mut context).unwrap();
-        module.clear_context(&mut context);
-        module.finalize_definitions().unwrap();
-
         // Get a callable function pointer.
-        let code = module.get_finalized_function(function_id);
+        let code = jit_helper.finalize();
         let compiled_function =
             unsafe { std::mem::transmute::<_, fn(*const f64, usize) -> f64>(code) };
         Ok(compiled_function)
