@@ -9,6 +9,7 @@ use cranelift_frontend::FunctionBuilder;
 /// expression tree.
 ///
 /// Being a leaf node, this node has no children.
+#[derive(Debug, Clone, Copy)]
 pub enum LeafNode {
     Constant(f64),   // Leaf node: a constant value.
     Variable(usize), // The usize is the index of the variable in the input vector.

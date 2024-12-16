@@ -4,6 +4,7 @@ use cranelift_codegen::ir::{InstBuilder, Value};
 
 /// # BinaryNode
 /// A node that has exactly two child nodes.
+#[derive(Debug, Clone)]
 pub enum BinaryNode {
     Add(Box<Expr>, Box<Expr>),      // Binary operation: addition.
     Multiply(Box<Expr>, Box<Expr>), // Binary operation: multiplication.

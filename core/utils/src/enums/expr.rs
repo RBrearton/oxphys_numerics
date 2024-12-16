@@ -12,6 +12,7 @@ use crate::{
 use super::{binary_node::BinaryNode, leaf_node::LeafNode, unary_node::UnaryNode};
 
 /// Expression tree.
+#[derive(Debug, Clone)]
 pub enum Expr {
     Leaf(LeafNode),
     Unary(UnaryNode),

@@ -8,6 +8,7 @@ use super::expr::Expr;
 
 /// # UnaryNode
 /// A node that has exactly one child node.
+#[derive(Debug, Clone)]
 pub enum UnaryNode {
     Negate(Box<Expr>), // Unary operation: negation.
     Sqrt(Box<Expr>),   // Unary operation: square root.
