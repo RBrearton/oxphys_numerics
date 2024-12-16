@@ -39,8 +39,11 @@ pub trait Expression {
         // Use cranelift_native to configure ISA for your current platform (e.g. Apple Silicon).
         let isa_builder = cranelift_native::builder().expect("Failed to create ISA builder");
 
-        // Create a default flags builder and then Flags.
-        let flag_builder = cranelift_codegen::settings::builder();
+        // Create a default flags builder and manually pass in the opt_level "speed" flag. We're
+        // generally very performance sensitive here, so we'll always want the most aggressive
+        // optimization level here.
+        let mut flag_builder = cranelift_codegen::settings::builder();
+        flag_builder.set("opt_level", "speed").unwrap();
         let flags = cranelift_codegen::settings::Flags::new(flag_builder);
         let isa = isa_builder.finish(flags).expect("Failed to create ISA");
 
