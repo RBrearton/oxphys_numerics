@@ -1,7 +1,7 @@
 use std::{f64::consts, ptr};
 
 use utils::{
-    enums::{expr::Expr, leaf_node::LeafNode, unary_node::UnaryNode},
+    functions::{constant, sqrt, variable},
     traits::expression::Expression,
 };
 
@@ -12,11 +12,10 @@ fn native_expression(x: f64, y: f64) -> f64 {
 
 fn main() {
     // Set up the expression.
-    let x = Expr::Leaf(LeafNode::Variable(0));
-    let y = Expr::Leaf(LeafNode::Variable(1));
-    let pi = Expr::Leaf(LeafNode::Constant(consts::PI));
-    let sqrt_argument = (pi / y.clone()) * x;
-    let expr = Expr::Unary(UnaryNode::Sqrt(Box::new(sqrt_argument))) * y.clone();
+    let x = variable(0);
+    let y = variable(1);
+    let pi = constant(consts::PI);
+    let expr = sqrt(pi / y.clone() * x) * y;
 
     // The values that we'll give to x and y.
     let variables = vec![1.0, 2.0];
