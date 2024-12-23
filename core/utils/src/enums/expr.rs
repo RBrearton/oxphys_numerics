@@ -1,3 +1,5 @@
+use std::ops::{Add, Div, Mul, Neg, Sub};
+
 use cranelift_codegen::ir::Value;
 use cranelift_frontend::FunctionBuilder;
 
@@ -11,12 +13,53 @@ use crate::{
 
 use super::{binary_node::BinaryNode, leaf_node::LeafNode, unary_node::UnaryNode};
 
-/// Expression tree.
+/// # Expr
+/// The main expression enum. This represents a node in an `oxphys_numerics` expression tree.
 #[derive(Debug, Clone)]
 pub enum Expr {
     Leaf(LeafNode),
     Unary(UnaryNode),
     Binary(BinaryNode),
+}
+
+impl Add for Expr {
+    type Output = Expr;
+
+    fn add(self, other: Expr) -> Expr {
+        Expr::Binary(BinaryNode::Add(Box::new(self), Box::new(other)))
+    }
+}
+
+impl Sub for Expr {
+    type Output = Expr;
+
+    fn sub(self, other: Expr) -> Expr {
+        Expr::Binary(BinaryNode::Subtract(Box::new(self), Box::new(other)))
+    }
+}
+
+impl Mul for Expr {
+    type Output = Expr;
+
+    fn mul(self, other: Expr) -> Expr {
+        Expr::Binary(BinaryNode::Multiply(Box::new(self), Box::new(other)))
+    }
+}
+
+impl Div for Expr {
+    type Output = Expr;
+
+    fn div(self, other: Expr) -> Expr {
+        Expr::Binary(BinaryNode::Frac(Box::new(self), Box::new(other)))
+    }
+}
+
+impl Neg for Expr {
+    type Output = Expr;
+
+    fn neg(self) -> Expr {
+        Expr::Unary(UnaryNode::Negate(Box::new(self)))
+    }
 }
 
 impl ExpressionCompiler for Expr {
