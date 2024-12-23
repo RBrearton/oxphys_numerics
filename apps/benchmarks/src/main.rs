@@ -1,7 +1,7 @@
 use std::{f64::consts, ptr};
 
 use utils::{
-    enums::{binary_node::BinaryNode, expr::Expr, leaf_node::LeafNode, unary_node::UnaryNode},
+    enums::{expr::Expr, leaf_node::LeafNode, unary_node::UnaryNode},
     traits::expression::Expression,
 };
 
@@ -15,10 +15,8 @@ fn main() {
     let x = Expr::Leaf(LeafNode::Variable(0));
     let y = Expr::Leaf(LeafNode::Variable(1));
     let pi = Expr::Leaf(LeafNode::Constant(consts::PI));
-    let pi_over_y = Expr::Binary(BinaryNode::Frac(Box::new(pi), Box::new(y.clone())));
-    let sqrt_argument = Expr::Binary(BinaryNode::Multiply(Box::new(pi_over_y), Box::new(x)));
-    let sqrt = Expr::Unary(UnaryNode::Sqrt(Box::new(sqrt_argument)));
-    let expr = Expr::Binary(BinaryNode::Multiply(Box::new(sqrt), Box::new(y)));
+    let sqrt_argument = (pi / y.clone()) * x;
+    let expr = Expr::Unary(UnaryNode::Sqrt(Box::new(sqrt_argument))) * y.clone();
 
     // The values that we'll give to x and y.
     let variables = vec![1.0, 2.0];
