@@ -13,6 +13,7 @@
     "fdiv",
     "fmul",
     "fneg",
+    "fsub",
     "libcall",
     "maturin",
     "ndarray",

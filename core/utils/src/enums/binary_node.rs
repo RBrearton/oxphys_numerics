@@ -7,6 +7,7 @@ use cranelift_codegen::ir::{InstBuilder, Value};
 #[derive(Debug, Clone)]
 pub enum BinaryNode {
     Add(Box<Expr>, Box<Expr>),      // Binary operation: addition.
+    Subtract(Box<Expr>, Box<Expr>), // Binary operation: subtraction.
     Multiply(Box<Expr>, Box<Expr>), // Binary operation: multiplication.
     Frac(Box<Expr>, Box<Expr>),     // Binary operation: division.
     Pow(Box<Expr>, Box<Expr>),      // Binary operation: exponentiation.
@@ -19,6 +20,7 @@ impl BinaryNode {
     fn left(&self) -> &Expr {
         match self {
             BinaryNode::Add(left, _) => left,
+            BinaryNode::Subtract(left, _) => left,
             BinaryNode::Multiply(left, _) => left,
             BinaryNode::Frac(left, _) => left,
             BinaryNode::Pow(left, _) => left,
@@ -31,6 +33,7 @@ impl BinaryNode {
     fn right(&self) -> &Expr {
         match self {
             BinaryNode::Add(_, right) => right,
+            BinaryNode::Subtract(_, right) => right,
             BinaryNode::Multiply(_, right) => right,
             BinaryNode::Frac(_, right) => right,
             BinaryNode::Pow(_, right) => right,
@@ -46,6 +49,7 @@ impl BinaryNode {
     ) -> Value {
         match self {
             BinaryNode::Add(_, _) => builder.ins().fadd(left_value, right_value),
+            BinaryNode::Subtract(_, _) => builder.ins().fsub(left_value, right_value),
             BinaryNode::Multiply(_, _) => builder.ins().fmul(left_value, right_value),
             BinaryNode::Frac(_, _) => builder.ins().fdiv(left_value, right_value),
             _ => unimplemented!(),
@@ -108,6 +112,9 @@ impl Expression for BinaryNode {
     fn evaluate(&self, variables: &Vec<f64>) -> f64 {
         match self {
             BinaryNode::Add(left, right) => left.evaluate(variables) + right.evaluate(variables),
+            BinaryNode::Subtract(left, right) => {
+                left.evaluate(variables) - right.evaluate(variables)
+            }
             BinaryNode::Multiply(left, right) => {
                 left.evaluate(variables) * right.evaluate(variables)
             }
