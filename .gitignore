@@ -10,7 +10,7 @@ launch.json
 # Some specific lock files.
 core/pybindings/Cargo.lock
 core/pybindings/uv.lock
-core/utils/Cargo.lock
+core/oxphys_numerics/Cargo.lock
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

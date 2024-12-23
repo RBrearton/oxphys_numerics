@@ -23,6 +23,12 @@ pub enum ExprType {
     Fraction,
 }
 
+struct Instruction {
+    opcode: ExprType, // The thing we want to run.
+    arg1: ExprType,   // The first argument; something we may also need to run.
+    arg2: ExprType,   // The second argument;
+}
+
 /// Formats the sum of two numbers as string.
 #[pyfunction]
 fn sum_as_string(a: usize, b: usize) -> PyResult<String> {

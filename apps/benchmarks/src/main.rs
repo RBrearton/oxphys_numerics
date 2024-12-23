@@ -1,6 +1,6 @@
 use std::{f64::consts, ptr};
 
-use utils::{
+use oxphys_numerics::{
     functions::{constant, sqrt, variable},
     traits::expression::Expression,
 };

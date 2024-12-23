@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-utils = { path = "../../core/utils" }
+oxphys_numerics = { path = "../../core/oxphys_numerics" }
