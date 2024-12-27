@@ -38,6 +38,8 @@ unfixable = [
 "tests/**" = [
     "S101",   # Obviously we can use assertions when testing.
     "ANN201", # We don't want to type annotate test functions.
+    "INP001", # We don't need __init__.py files in test directories.
+    "SLF001", # We want to test protected attributes.
 ]
 
 
