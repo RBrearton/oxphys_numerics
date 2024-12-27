@@ -493,7 +493,7 @@ class Minus(Binary):
         return f"{self._left.to_latex()} - {self._right.to_latex()}"
 
     def _build_rust_expr(self):  # noqa: ANN202
-        return _RustExpr.sub(self._left._rs_expr, self._right._rs_expr)  # noqa: SLF001
+        return _RustExpr.subtract(self._left._rs_expr, self._right._rs_expr)  # noqa: SLF001
 
 
 class Multiply(Binary):
@@ -504,7 +504,7 @@ class Multiply(Binary):
         return f"{self._left.to_latex()} {self._right.to_latex()}"
 
     def _build_rust_expr(self):  # noqa: ANN202
-        return _RustExpr.mul(self._left._rs_expr, self._right._rs_expr)  # noqa: SLF001
+        return _RustExpr.multiply(self._left._rs_expr, self._right._rs_expr)  # noqa: SLF001
 
 
 class Power(Binary):
@@ -592,7 +592,7 @@ class Fraction(Binary):
         return R"\frac{" + self._left.to_latex() + "}{" + self._right.to_latex() + "}"
 
     def _build_rust_expr(self):  # noqa: ANN202
-        return _RustExpr.div(self.numerator._rs_expr, self.denominator._rs_expr)  # noqa: SLF001
+        return _RustExpr.frac(self.numerator._rs_expr, self.denominator._rs_expr)  # noqa: SLF001
 
 
 # endregion
