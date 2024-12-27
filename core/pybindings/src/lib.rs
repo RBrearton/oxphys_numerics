@@ -56,6 +56,20 @@ impl PyExpr {
         }
     }
 
+    #[staticmethod]
+    pub fn exp(child: &PyExpr) -> Self {
+        PyExpr {
+            inner: Expr::Unary(UnaryNode::Exp(Box::new(child.inner.clone()))),
+        }
+    }
+
+    #[staticmethod]
+    pub fn ln(child: &PyExpr) -> Self {
+        PyExpr {
+            inner: Expr::Unary(UnaryNode::Ln(Box::new(child.inner.clone()))),
+        }
+    }
+
     // Constructors for binary nodes
     #[staticmethod]
     pub fn add(left: &PyExpr, right: &PyExpr) -> Self {
@@ -68,7 +82,7 @@ impl PyExpr {
     }
 
     #[staticmethod]
-    pub fn sub(left: &PyExpr, right: &PyExpr) -> Self {
+    pub fn subtract(left: &PyExpr, right: &PyExpr) -> Self {
         PyExpr {
             inner: Expr::Binary(BinaryNode::Subtract(
                 Box::new(left.inner.clone()),
@@ -77,7 +91,45 @@ impl PyExpr {
         }
     }
 
-    // ... etc for mul, div, etc ...
+    #[staticmethod]
+    pub fn multiply(left: &PyExpr, right: &PyExpr) -> Self {
+        PyExpr {
+            inner: Expr::Binary(BinaryNode::Multiply(
+                Box::new(left.inner.clone()),
+                Box::new(right.inner.clone()),
+            )),
+        }
+    }
+
+    #[staticmethod]
+    pub fn frac(numerator: &PyExpr, denominator: &PyExpr) -> Self {
+        PyExpr {
+            inner: Expr::Binary(BinaryNode::Frac(
+                Box::new(numerator.inner.clone()),
+                Box::new(denominator.inner.clone()),
+            )),
+        }
+    }
+
+    #[staticmethod]
+    pub fn pow(base: &PyExpr, exponent: &PyExpr) -> Self {
+        PyExpr {
+            inner: Expr::Binary(BinaryNode::Pow(
+                Box::new(base.inner.clone()),
+                Box::new(exponent.inner.clone()),
+            )),
+        }
+    }
+
+    #[staticmethod]
+    pub fn log(base: &PyExpr, argument: &PyExpr) -> Self {
+        PyExpr {
+            inner: Expr::Binary(BinaryNode::Log(
+                Box::new(base.inner.clone()),
+                Box::new(argument.inner.clone()),
+            )),
+        }
+    }
 
     // Example of how to introspect the stored enum from Python
     pub fn is_leaf(&self) -> bool {
@@ -91,9 +143,6 @@ impl PyExpr {
             _ => None,
         }
     }
-
-    // You can define similar “getter” methods for variables, or for unaries, or for left/right sides of a binary, etc.
-    // ...
 }
 
 /// Formats the sum of two numbers as string.
