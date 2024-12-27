@@ -28,6 +28,8 @@
     "pymodule",
     "sdist",
     "sinc",
+    "staticmethod",
+    "unaries",
     "venv"
   ],
   "editor.rulers": [100],
