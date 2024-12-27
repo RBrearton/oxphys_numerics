@@ -1,5 +1,7 @@
 # oxphys_numerics
 
+***`oxphys_numerics` is currently under active development.***
+
 To build the python package as a module in your current virtual environment, first go to the `core/pybindings` directory, then run
 
 ```bash
@@ -18,7 +20,7 @@ uv run pytest
 ## Jit compilation
 
 The `oxphys_numerics` package's python api lets users define functions using an expression graph.
-That expression graph, when evaluated, is _just-in-time_ compiled on the rust side to produce a function that's as optimal as if you had hand-written it in rust.
+That expression graph, when evaluated, is *just-in-time* compiled on the rust side to produce a function that's as optimal as if you had hand-written it in rust.
 
 The following are some notes for developers on jit compilation.
 
