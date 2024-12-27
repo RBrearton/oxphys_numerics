@@ -9,10 +9,14 @@ import abc
 from typing import TYPE_CHECKING, Self, Union, overload
 
 import numpy as np
+import oxphys_numerics_rs as rs
 import pandas as pd
 import polars as pl
 
 from .errors import InvalidExpressionError
+
+_RustExpr = rs.PyExpr  # type: ignore
+"""The rust expression type that we're wrapping up here."""
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -67,6 +71,10 @@ class Expr(abc.ABC):
     This base class handles the common operator overloads etc. that are shared by all expression
     types.
     """
+
+    def __init__(self) -> None:
+        """Initialise a new expression."""
+        self._rs_expr = self._build_rust_expr()
 
     def __add__(self, other: ExprCastable) -> "Add":
         """Add two expressions together.
@@ -257,6 +265,17 @@ class Expr(abc.ABC):
     def children(self) -> list["Expr"]:
         """Return a list of all the children of the expression."""
 
+    @abc.abstractmethod
+    def _build_rust_expr(self):  # noqa: ANN202
+        """Build the rust expression from the python expression.
+
+        This method must be implemented by all expressions to allow for the construction of the
+        rust expression from the python expression. This isn't type annotated because it's we can't
+        know the type of the rust expression using python static type checkers.
+
+        This must return an instance of _RustExpr.
+        """
+
 
 # endregion
 # region Leaf
@@ -280,6 +299,7 @@ class Constant(Leaf):
             value: The value of the constant.
         """
         self._value = value
+        super().__init__()
 
     @property
     def value(self) -> float:
@@ -296,6 +316,9 @@ class Constant(Leaf):
     def variables(self) -> list["Variable"]:
         return []
 
+    def _build_rust_expr(self):  # noqa: ANN202
+        return _RustExpr.constant(self.value)
+
 
 class Variable(Leaf):
     """Represents a variable."""
@@ -307,12 +330,7 @@ class Variable(Leaf):
             name: The name of the variable.
         """
         self._name = name
-
-    def to_latex(self) -> str:
-        return self._name
-
-    def variables(self) -> list["Variable"]:
-        return [self]
+        super().__init__()
 
     def __str__(self) -> str:
         """Create the string representation of the variable.
@@ -341,6 +359,15 @@ class Variable(Leaf):
         """
         return hash(self._name)
 
+    def to_latex(self) -> str:
+        return self._name
+
+    def variables(self) -> list["Variable"]:
+        return [self]
+
+    def _build_rust_expr(self):  # noqa: ANN202
+        return _RustExpr.variable(self._name)
+
 
 # endregion
 # region Unary
@@ -352,6 +379,7 @@ class Unary(Expr):
     def __init__(self, expr: ExprCastable) -> None:
         """Initialise a new unary expression."""
         self._expr = _to_expr(expr)
+        super().__init__()
 
     def variables(self) -> list["Variable"]:
         """Return a list of all the variables in the expression."""
@@ -367,12 +395,18 @@ class Negate(Unary):
     def to_latex(self) -> str:
         return f"-{self._expr.to_latex()}"
 
+    def _build_rust_expr(self):  # noqa: ANN202
+        return _RustExpr.negate(self._expr._rs_expr)  # noqa: SLF001
+
 
 class Sqrt(Unary):
     """Represents the square root of an expression."""
 
     def to_latex(self) -> str:
         return R"\sqrt{" + self._expr.to_latex() + "}"
+
+    def _build_rust_expr(self):  # noqa: ANN202
+        return _RustExpr.sqrt(self._expr._rs_expr)  # noqa: SLF001
 
 
 class Sin(Unary):
@@ -381,12 +415,18 @@ class Sin(Unary):
     def to_latex(self) -> str:
         return R"\sin{ \left(" + self._expr.to_latex() + R"\right) }"
 
+    def _build_rust_expr(self):  # noqa: ANN202
+        return _RustExpr.sin(self._expr._rs_expr)  # noqa: SLF001
+
 
 class Cos(Unary):
     """Represents the cosine of an expression."""
 
     def to_latex(self) -> str:
         return R"\cos{ \left(" + self._expr.to_latex() + R"\right) }"
+
+    def _build_rust_expr(self):  # noqa: ANN202
+        return _RustExpr.cos(self._expr._rs_expr)  # noqa: SLF001
 
 
 class Exp(Unary):
@@ -395,12 +435,18 @@ class Exp(Unary):
     def to_latex(self) -> str:
         return R"e^{" + self._expr.to_latex() + "}"
 
+    def _build_rust_expr(self):  # noqa: ANN202
+        return _RustExpr.exp(self._expr._rs_expr)  # noqa: SLF001
+
 
 class Ln(Unary):
     """Represents the natural logarithm of an expression."""
 
     def to_latex(self) -> str:
         return R"\ln{" + self._expr.to_latex() + "}"
+
+    def _build_rust_expr(self):  # noqa: ANN202
+        return _RustExpr.ln(self._expr._rs_expr)  # noqa: SLF001
 
 
 # endregion
@@ -419,6 +465,7 @@ class Binary(Expr):
         """
         self._left = _to_expr(left)
         self._right = _to_expr(right)
+        super().__init__()
 
     def variables(self) -> list["Variable"]:
         """Return a list of all the variables in the expression."""
@@ -435,12 +482,18 @@ class Add(Binary):
     def to_latex(self) -> str:
         return f"{self._left.to_latex()} + {self._right.to_latex()}"
 
+    def _build_rust_expr(self):  # noqa: ANN202
+        return _RustExpr.add(self._left._rs_expr, self._right._rs_expr)  # noqa: SLF001
+
 
 class Minus(Binary):
     """Represents the subtraction of two expressions."""
 
     def to_latex(self) -> str:
         return f"{self._left.to_latex()} - {self._right.to_latex()}"
+
+    def _build_rust_expr(self):  # noqa: ANN202
+        return _RustExpr.sub(self._left._rs_expr, self._right._rs_expr)  # noqa: SLF001
 
 
 class Multiply(Binary):
@@ -449,6 +502,9 @@ class Multiply(Binary):
     def to_latex(self) -> str:
         # Note that we don't put a \times here; I think it leads to an uglier output.
         return f"{self._left.to_latex()} {self._right.to_latex()}"
+
+    def _build_rust_expr(self):  # noqa: ANN202
+        return _RustExpr.mul(self._left._rs_expr, self._right._rs_expr)  # noqa: SLF001
 
 
 class Power(Binary):
@@ -474,6 +530,9 @@ class Power(Binary):
 
     def to_latex(self) -> str:
         return f"{self.base.to_latex()}^{{{self.exponent.to_latex()}}}"
+
+    def _build_rust_expr(self):  # noqa: ANN202
+        return _RustExpr.pow(self.base._rs_expr, self.exponent._rs_expr)  # noqa: SLF001
 
 
 class Log(Binary):
@@ -502,6 +561,9 @@ class Log(Binary):
     def to_latex(self) -> str:
         return R"\log_{" + self.base.to_latex() + R"}{ \left(" + self.arg.to_latex() + R"\right)}"
 
+    def _build_rust_expr(self):  # noqa: ANN202
+        return _RustExpr.log(self.arg._rs_expr, self.base._rs_expr)  # noqa: SLF001
+
 
 class Fraction(Binary):
     """Represents the division of two expressions."""
@@ -528,6 +590,9 @@ class Fraction(Binary):
 
     def to_latex(self) -> str:
         return R"\frac{" + self._left.to_latex() + "}{" + self._right.to_latex() + "}"
+
+    def _build_rust_expr(self):  # noqa: ANN202
+        return _RustExpr.div(self.numerator._rs_expr, self.denominator._rs_expr)  # noqa: SLF001
 
 
 # endregion
