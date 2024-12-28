@@ -12,7 +12,7 @@ pub struct PyExpr {
 
 #[pymethods]
 impl PyExpr {
-    // Simple constructors for leaf nodes
+    // Simple constructors for leaf nodes.
     #[staticmethod]
     pub fn constant(value: f64) -> Self {
         PyExpr {
@@ -27,7 +27,7 @@ impl PyExpr {
         }
     }
 
-    // Constructors for unary nodes
+    // Constructors for unary nodes.
     #[staticmethod]
     pub fn negate(child: &PyExpr) -> Self {
         PyExpr {
@@ -70,7 +70,7 @@ impl PyExpr {
         }
     }
 
-    // Constructors for binary nodes
+    // Constructors for binary nodes.
     #[staticmethod]
     pub fn add(left: &PyExpr, right: &PyExpr) -> Self {
         PyExpr {
@@ -131,7 +131,7 @@ impl PyExpr {
         }
     }
 
-    // Example of how to introspect the stored enum from Python
+    // Example of how to inspect the stored enum from Python.
     pub fn is_leaf(&self) -> bool {
         matches!(self.inner, Expr::Leaf(_))
     }
