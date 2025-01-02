@@ -11,5 +11,25 @@ pub struct InitializedVariable {
     inner_variable: UninitializedVariable,
 
     /// The variable's index.
-    pub index: usize,
+    index: usize,
+}
+
+impl InitializedVariable {
+    /// Create a new initialized variable.
+    pub fn new(inner_variable: UninitializedVariable, index: usize) -> Self {
+        Self {
+            inner_variable,
+            index,
+        }
+    }
+
+    /// Get the inner variable.
+    pub fn inner(&self) -> &UninitializedVariable {
+        &self.inner_variable
+    }
+
+    /// Get the index of the variable.
+    pub fn index(&self) -> usize {
+        self.index
+    }
 }
