@@ -1,5 +1,6 @@
 pub mod binary_node;
 pub mod expr;
+pub mod initialized_expr;
 pub mod initialized_expression;
 pub mod initialized_leaf;
 pub mod leaf_node;
