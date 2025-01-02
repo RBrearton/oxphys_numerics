@@ -4,5 +4,17 @@
 #[derive(Debug, Clone, PartialEq)]
 pub struct UninitializedVariable {
     /// The name of the variable.
-    pub name: String,
+    name: String,
+}
+
+impl UninitializedVariable {
+    /// Create a new uninitialized variable.
+    pub fn new(name: String) -> Self {
+        Self { name }
+    }
+
+    /// Get the name of the variable.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
 }
