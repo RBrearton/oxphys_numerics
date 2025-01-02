@@ -5,6 +5,7 @@ pub mod initialized_leaf;
 pub mod leaf_node;
 pub mod scalar_type;
 pub mod unary_node;
+pub mod uninitialized_expr;
 pub mod uninitialized_expression;
 pub mod uninitialized_leaf;
 pub mod variable;
