@@ -11,15 +11,50 @@ use crate::{
     traits::{expression::Expression, expression_compiler::ExpressionCompiler},
 };
 
-use super::{binary_node::BinaryNode, leaf_node::LeafNode, unary_node::UnaryNode};
+use super::{
+    binary_node::BinaryNode, initialized_expr::InitializedExpr, unary_node::UnaryNode,
+    uninitialized_expr::UninitializedExpr,
+};
 
 /// # Expr
 /// The main expression enum. This represents a node in an `oxphys_numerics` expression tree.
 #[derive(Debug, Clone)]
 pub enum Expr {
-    Leaf(LeafNode),
-    Unary(UnaryNode),
-    Binary(BinaryNode),
+    Initialized(InitializedExpr),
+    Uninitialized(UninitializedExpr),
+}
+
+impl Expr {
+    /// # Evaluate vec
+    /// Evaluate the expression tree on vectors of input variables.
+    pub fn evaluate_vec(&self, variables: &Vec<Vec<f64>>) -> Result<Vec<f64>, ExpressionError> {
+        // Get the lengths of the vectors we were given as a new hashmap mapping variable names to
+        // their lengths.
+        let lengths: Vec<usize> = variables.iter().map(|values| (values.len())).collect();
+
+        // Get the first length. If there are no lengths, return a NoVariable error.
+        let first_length = match lengths.first() {
+            Some(length) => *length,
+            None => return Err(ExpressionError::NoVariable(NoVariableError::new())),
+        };
+
+        // Check that all the lengths are the same.
+        if lengths.iter().any(|length| *length != first_length) {
+            return Err(ExpressionError::LengthMismatch(LengthMismatchError::new(
+                lengths,
+            )));
+        }
+
+        // Now we know it's safe to do so, call evaluate on the expression tree for each element of
+        // the variables vector.
+        let result: Vec<f64> = variables
+            .iter()
+            .map(|values| self.evaluate(values))
+            .collect();
+
+        // Return the result.
+        Ok(result)
+    }
 }
 
 impl Add for Expr {
@@ -117,38 +152,5 @@ impl Expression for Expr {
             Expr::Unary(unary) => unary.num_variables(),
             Expr::Binary(binary) => binary.num_variables(),
         }
-    }
-}
-
-impl Expr {
-    /// # Evaluate vec
-    /// Evaluate the expression tree on vectors of input variables.
-    pub fn evaluate_vec(&self, variables: &Vec<Vec<f64>>) -> Result<Vec<f64>, ExpressionError> {
-        // Get the lengths of the vectors we were given as a new hashmap mapping variable names to
-        // their lengths.
-        let lengths: Vec<usize> = variables.iter().map(|values| (values.len())).collect();
-
-        // Get the first length. If there are no lengths, return a NoVariable error.
-        let first_length = match lengths.first() {
-            Some(length) => *length,
-            None => return Err(ExpressionError::NoVariable(NoVariableError::new())),
-        };
-
-        // Check that all the lengths are the same.
-        if lengths.iter().any(|length| *length != first_length) {
-            return Err(ExpressionError::LengthMismatch(LengthMismatchError::new(
-                lengths,
-            )));
-        }
-
-        // Now we know it's safe to do so, call evaluate on the expression tree for each element of
-        // the variables vector.
-        let result: Vec<f64> = variables
-            .iter()
-            .map(|values| self.evaluate(values))
-            .collect();
-
-        // Return the result.
-        Ok(result)
     }
 }
