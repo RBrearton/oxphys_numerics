@@ -3,13 +3,7 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 use cranelift_codegen::ir::Value;
 use cranelift_frontend::FunctionBuilder;
 
-use crate::{
-    errors::{
-        expression_error::ExpressionError, length_mismatch_error::LengthMismatchError,
-        no_variable_error::NoVariableError,
-    },
-    traits::{expression::Expression, expression_compiler::ExpressionCompiler},
-};
+use crate::traits::{expression::Expression, expression_compiler::ExpressionCompiler};
 
 use super::{
     binary_node::BinaryNode, expr::Expr, initialized_leaf::InitializedLeaf, unary_node::UnaryNode,
@@ -78,37 +72,6 @@ impl Neg for InitializedExpr {
 }
 
 impl InitializedExpr {
-    /// # Evaluate vec
-    /// Evaluate the expression tree on vectors of input variables.
-    pub fn evaluate_vec(&self, variables: &Vec<Vec<f64>>) -> Result<Vec<f64>, ExpressionError> {
-        // Get the lengths of the vectors we were given as a new hashmap mapping variable names to
-        // their lengths.
-        let lengths: Vec<usize> = variables.iter().map(|values| (values.len())).collect();
-
-        // Get the first length. If there are no lengths, return a NoVariable error.
-        let first_length = match lengths.first() {
-            Some(length) => *length,
-            None => return Err(ExpressionError::NoVariable(NoVariableError::new())),
-        };
-
-        // Check that all the lengths are the same.
-        if lengths.iter().any(|length| *length != first_length) {
-            return Err(ExpressionError::LengthMismatch(LengthMismatchError::new(
-                lengths,
-            )));
-        }
-
-        // Now we know it's safe to do so, call evaluate on the expression tree for each element of
-        // the variables vector.
-        let result: Vec<f64> = variables
-            .iter()
-            .map(|values| self.evaluate(values))
-            .collect();
-
-        // Return the result.
-        Ok(result)
-    }
-
     /// # To expr
     /// Converts the UninitializedExpr to an Expr.
     pub fn to_expr(self) -> Expr {
@@ -159,14 +122,6 @@ impl ExpressionCompiler for InitializedExpr {
 }
 
 impl Expression for InitializedExpr {
-    fn evaluate(&self, variables: &Vec<f64>) -> f64 {
-        match self {
-            InitializedExpr::Leaf(leaf) => leaf.evaluate(variables),
-            InitializedExpr::Unary(unary) => unary.evaluate(variables),
-            InitializedExpr::Binary(binary) => binary.evaluate(variables),
-        }
-    }
-
     fn num_variables(&self) -> usize {
         match self {
             InitializedExpr::Leaf(leaf) => leaf.num_variables(),
