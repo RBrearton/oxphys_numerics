@@ -6,6 +6,9 @@ use cranelift_frontend::FunctionBuilder;
 
 use crate::structs::initialized_variable::InitializedVariable;
 
+use super::expr::Expr;
+use super::initialized_expr::InitializedExpr;
+
 /// # Initialized leaf
 /// A leaf node that has been initialized, so it's associated with an index and can be used to
 /// evaluate expressions.
@@ -13,6 +16,14 @@ use crate::structs::initialized_variable::InitializedVariable;
 pub enum InitializedLeaf {
     Constant(f64),                 // Leaf node: a constant value.
     Variable(InitializedVariable), // The usize is the index of the variable in the input vector.
+}
+
+impl InitializedLeaf {
+    /// # To expr
+    /// Convert the leaf node to an expression.
+    pub fn to_expr(self) -> Expr {
+        Expr::Initialized(InitializedExpr::Leaf(self))
+    }
 }
 
 impl ExpressionCompiler for InitializedLeaf {

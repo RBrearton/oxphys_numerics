@@ -1,6 +1,6 @@
 use crate::structs::uninitialized_variable::UninitializedVariable;
 
-use super::initialized_leaf::InitializedLeaf;
+use super::{expr::Expr, initialized_leaf::InitializedLeaf, uninitialized_expr::UninitializedExpr};
 
 /// # Uninitialized leaf
 /// A leaf node associated with metadata that the user has input, but it hasn't yet been initialized
@@ -28,5 +28,11 @@ impl UninitializedLeaf {
     /// Create a new constant leaf node.
     pub fn new_constant(value: f64) -> Self {
         UninitializedLeaf::Constant(value)
+    }
+
+    /// # To expr
+    /// Convert the leaf node to an expression.
+    pub fn to_expr(self) -> Expr {
+        Expr::Uninitialized(UninitializedExpr::Leaf(self))
     }
 }
