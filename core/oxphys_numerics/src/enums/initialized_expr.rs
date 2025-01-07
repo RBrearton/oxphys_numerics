@@ -29,7 +29,10 @@ impl Add for InitializedExpr {
     type Output = InitializedExpr;
 
     fn add(self, other: InitializedExpr) -> InitializedExpr {
-        InitializedExpr::Binary(BinaryNode::Add(Box::new(self), Box::new(other)))
+        InitializedExpr::Binary(BinaryNode::Add(
+            Box::new(self.to_expr()),
+            Box::new(other.to_expr()),
+        ))
     }
 }
 
@@ -37,7 +40,10 @@ impl Sub for InitializedExpr {
     type Output = InitializedExpr;
 
     fn sub(self, other: InitializedExpr) -> InitializedExpr {
-        InitializedExpr::Binary(BinaryNode::Subtract(Box::new(self), Box::new(other)))
+        InitializedExpr::Binary(BinaryNode::Subtract(
+            Box::new(self.to_expr()),
+            Box::new(other.to_expr()),
+        ))
     }
 }
 
@@ -45,7 +51,10 @@ impl Mul for InitializedExpr {
     type Output = InitializedExpr;
 
     fn mul(self, other: InitializedExpr) -> InitializedExpr {
-        InitializedExpr::Binary(BinaryNode::Multiply(Box::new(self), Box::new(other)))
+        InitializedExpr::Binary(BinaryNode::Multiply(
+            Box::new(self.to_expr()),
+            Box::new(other.to_expr()),
+        ))
     }
 }
 
@@ -53,7 +62,10 @@ impl Div for InitializedExpr {
     type Output = InitializedExpr;
 
     fn div(self, other: InitializedExpr) -> InitializedExpr {
-        InitializedExpr::Binary(BinaryNode::Frac(Box::new(self), Box::new(other)))
+        InitializedExpr::Binary(BinaryNode::Frac(
+            Box::new(self.to_expr()),
+            Box::new(other.to_expr()),
+        ))
     }
 }
 
@@ -61,7 +73,7 @@ impl Neg for InitializedExpr {
     type Output = InitializedExpr;
 
     fn neg(self) -> InitializedExpr {
-        InitializedExpr::Unary(UnaryNode::Negate(Box::new(self)))
+        InitializedExpr::Unary(UnaryNode::Negate(Box::new(self.to_expr())))
     }
 }
 
