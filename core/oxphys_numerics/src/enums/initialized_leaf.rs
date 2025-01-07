@@ -88,13 +88,6 @@ impl ExpressionCompiler for InitializedLeaf {
 }
 
 impl Expression for InitializedLeaf {
-    fn evaluate(&self, variables: &Vec<f64>) -> f64 {
-        match self {
-            InitializedLeaf::Constant(value) => *value,
-            InitializedLeaf::Variable(variable) => variables[variable.index()],
-        }
-    }
-
     fn num_variables(&self) -> usize {
         match self {
             InitializedLeaf::Constant(_) => 0,
@@ -133,28 +126,5 @@ mod tests {
         let f = InitializedLeaf::Constant(2.0).compile_nd().unwrap();
         let values = vec![];
         assert_eq!(f(values.as_ptr(), values.len()), 2.0);
-    }
-
-    #[test]
-    fn test_evaluate_variable() {
-        // Set up the variables hashmap.
-        let variables = vec![1.0, 2.0, 3.0];
-
-        // f(x) = x
-        let expr = InitializedLeaf::Variable(InitializedVariable::new(
-            UninitializedVariable::new("var_name".to_string()),
-            0,
-        ));
-        assert_eq!(expr.evaluate(&variables), 2.0);
-    }
-
-    #[test]
-    fn test_evaluate_constant() {
-        // Set up the variables hashmap.
-        let variables = vec![1.0, 2.0, 3.0];
-
-        // f(x) = 2
-        let expr = InitializedLeaf::Constant(2.0);
-        assert_eq!(expr.evaluate(&variables), 2.0);
     }
 }
