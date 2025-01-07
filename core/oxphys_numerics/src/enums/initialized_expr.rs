@@ -96,6 +96,12 @@ impl InitializedExpr {
         // Return the result.
         Ok(result)
     }
+
+    /// # To expr
+    /// Converts the UninitializedExpr to an Expr.
+    pub fn to_expr(self) -> Expr {
+        Expr::Initialized(self)
+    }
 }
 
 impl ExpressionCompiler for InitializedExpr {

@@ -23,6 +23,12 @@ impl UninitializedExpr {
     pub fn initialize(self, index: usize) -> Result<Expr, ExpressionError> {
         unimplemented!()
     }
+
+    /// # To expr
+    /// Converts the UninitializedExpr to an Expr.
+    pub fn to_expr(self) -> Expr {
+        Expr::Uninitialized(self)
+    }
 }
 
 impl Add for UninitializedExpr {
