@@ -1,5 +1,8 @@
-use super::expr::Expr;
-use crate::traits::{expression::Expression, expression_compiler::ExpressionCompiler};
+use super::{expr::Expr, initialized_expr::InitializedExpr, uninitialized_expr::UninitializedExpr};
+use crate::traits::{
+    expression::Expression, expression_compiler::ExpressionCompiler,
+    expression_node::ExpressionNode,
+};
 use cranelift_codegen::ir::{InstBuilder, Value};
 
 /// # BinaryNode
@@ -12,6 +15,15 @@ pub enum BinaryNode {
     Frac(Box<Expr>, Box<Expr>),     // Binary operation: division.
     Pow(Box<Expr>, Box<Expr>),      // Binary operation: exponentiation.
     Log(Box<Expr>, Box<Expr>),      // Binary operation: logarithm.
+}
+
+impl ExpressionNode for BinaryNode {
+    fn to_expr(&self, is_initialized: bool) -> Expr {
+        match is_initialized {
+            true => Expr::Initialized(InitializedExpr::Binary(self.clone())),
+            false => Expr::Uninitialized(UninitializedExpr::Binary(self.clone())),
+        }
+    }
 }
 
 impl BinaryNode {
