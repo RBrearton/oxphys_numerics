@@ -49,4 +49,10 @@ impl Variable {
             index: Some(index),
         }
     }
+
+    /// # Is initialized
+    /// Returns true if the variable has been initialized.
+    pub fn is_initialized(&self) -> bool {
+        self.index.is_some()
+    }
 }
