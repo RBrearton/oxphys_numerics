@@ -1,9 +1,4 @@
 pub mod binary_node;
 pub mod expr;
-pub mod initialized_expr;
-pub mod initialized_leaf;
 pub mod leaf_node;
 pub mod unary_node;
-pub mod uninitialized_expr;
-pub mod uninitialized_leaf;
-pub mod variable;

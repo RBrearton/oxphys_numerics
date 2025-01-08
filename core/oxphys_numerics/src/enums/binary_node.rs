@@ -1,8 +1,5 @@
-use super::{expr::Expr, initialized_expr::InitializedExpr, uninitialized_expr::UninitializedExpr};
-use crate::traits::{
-    expression::Expression, expression_compiler::ExpressionCompiler,
-    expression_node::ExpressionNode,
-};
+use super::expr::Expr;
+use crate::traits::{expression::Expression, expression_compiler::ExpressionCompiler};
 use cranelift_codegen::ir::{InstBuilder, Value};
 
 /// # BinaryNode
@@ -15,15 +12,6 @@ pub enum BinaryNode {
     Frac(Box<Expr>, Box<Expr>),     // Binary operation: division.
     Pow(Box<Expr>, Box<Expr>),      // Binary operation: exponentiation.
     Log(Box<Expr>, Box<Expr>),      // Binary operation: logarithm.
-}
-
-impl ExpressionNode for BinaryNode {
-    fn to_expr(&self, is_initialized: bool) -> Expr {
-        match is_initialized {
-            true => Expr::Initialized(InitializedExpr::Binary(self.clone())),
-            false => Expr::Uninitialized(UninitializedExpr::Binary(self.clone())),
-        }
-    }
 }
 
 impl BinaryNode {
@@ -121,6 +109,25 @@ impl ExpressionCompiler for BinaryNode {
 }
 
 impl Expression for BinaryNode {
+    fn evaluate(&self, variables: &Vec<f64>) -> f64 {
+        match self {
+            BinaryNode::Add(left, right) => left.evaluate(variables) + right.evaluate(variables),
+            BinaryNode::Subtract(left, right) => {
+                left.evaluate(variables) - right.evaluate(variables)
+            }
+            BinaryNode::Multiply(left, right) => {
+                left.evaluate(variables) * right.evaluate(variables)
+            }
+            BinaryNode::Pow(base, exponent) => {
+                base.evaluate(variables).powf(exponent.evaluate(variables))
+            }
+            BinaryNode::Frac(numerator, denominator) => {
+                numerator.evaluate(variables) / denominator.evaluate(variables)
+            }
+            BinaryNode::Log(base, inner) => inner.evaluate(variables).log(base.evaluate(variables)),
+        }
+    }
+
     fn num_variables(&self) -> usize {
         self.left()
             .num_variables()
@@ -130,15 +137,15 @@ impl Expression for BinaryNode {
 
 #[cfg(test)]
 mod tests {
-    use crate::functions::variable;
+    use crate::enums::leaf_node::LeafNode;
 
     use super::*;
 
     #[test]
     fn test_compiled_add() {
         let f = BinaryNode::Add(
-            Box::new(variable("x".to_string()).to_expr()),
-            Box::new(variable("y".to_string()).to_expr()),
+            Box::new(Expr::Leaf(LeafNode::Variable(0))),
+            Box::new(Expr::Leaf(LeafNode::Variable(1))),
         )
         .compile_nd()
         .unwrap();
@@ -150,8 +157,8 @@ mod tests {
     #[test]
     fn test_compiled_multiply() {
         let f = BinaryNode::Multiply(
-            Box::new(variable("x".to_string()).to_expr()),
-            Box::new(variable("y".to_string()).to_expr()),
+            Box::new(Expr::Leaf(LeafNode::Variable(0))),
+            Box::new(Expr::Leaf(LeafNode::Variable(1))),
         )
         .compile_nd()
         .unwrap();
@@ -163,13 +170,41 @@ mod tests {
     #[test]
     fn test_compiled_frac() {
         let f = BinaryNode::Frac(
-            Box::new(variable("x".to_string()).to_expr()),
-            Box::new(variable("y".to_string()).to_expr()),
+            Box::new(Expr::Leaf(LeafNode::Variable(0))),
+            Box::new(Expr::Leaf(LeafNode::Variable(1))),
         )
         .compile_nd()
         .unwrap();
 
         let values = vec![3.0, 4.0];
         assert_eq!(f(values.as_ptr(), values.len()), 0.75);
+    }
+
+    #[test]
+    fn test_evaluated_add() {
+        let f = BinaryNode::Add(
+            Box::new(Expr::Leaf(LeafNode::Variable(0))),
+            Box::new(Expr::Leaf(LeafNode::Variable(1))),
+        );
+
+        let values = vec![1.0, 2.0];
+        assert_eq!(f.evaluate(&values), 3.0);
+    }
+
+    #[test]
+    fn test_evaluated_multiply() {
+        let func_1 = BinaryNode::Multiply(
+            Box::new(Expr::Leaf(LeafNode::Variable(0))),
+            Box::new(Expr::Leaf(LeafNode::Variable(1))),
+        );
+        let func_2 = BinaryNode::Multiply(
+            Box::new(Expr::Leaf(LeafNode::Variable(0))),
+            Box::new(Expr::Leaf(LeafNode::Constant(2.))),
+        );
+
+        let values_1 = vec![3.0, 4.0];
+        let values_2 = vec![3.0];
+        assert_eq!(func_1.evaluate(&values_1), 12.0);
+        assert_eq!(func_2.evaluate(&values_2), 6.0);
     }
 }

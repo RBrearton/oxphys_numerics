@@ -1,13 +1,10 @@
 use crate::traits::expression::Expression;
 use crate::traits::expression_compiler::ExpressionCompiler;
-use crate::traits::expression_node::ExpressionNode;
 use cranelift_codegen::ir::InstBuilder;
 use cranelift_codegen::ir::Value;
 use cranelift_frontend::FunctionBuilder;
 
 use super::expr::Expr;
-use super::initialized_expr::InitializedExpr;
-use super::uninitialized_expr::UninitializedExpr;
 
 /// # UnaryNode
 /// A node that has exactly one child node.
@@ -40,15 +37,6 @@ impl UnaryNode {
             UnaryNode::Negate(_) => builder.ins().fneg(input),
             UnaryNode::Sqrt(_) => builder.ins().sqrt(input),
             _ => unimplemented!(),
-        }
-    }
-}
-
-impl ExpressionNode for UnaryNode {
-    fn to_expr(&self, is_initialized: bool) -> Expr {
-        match is_initialized {
-            true => Expr::Initialized(InitializedExpr::Unary(self.clone())),
-            false => Expr::Uninitialized(UninitializedExpr::Unary(self.clone())),
         }
     }
 }
@@ -115,7 +103,7 @@ mod tests {
         let variables = vec![1.0, 2.0, 3.0];
 
         // f(x) = -x
-        let expr = UnaryNode::Negate(Box::new(Expr::Initialized(LeafNode::Variable(1))));
+        let expr = UnaryNode::Negate(Box::new(Expr::Leaf(LeafNode::Variable(1))));
         assert_eq!(expr.evaluate(&variables), -2.0);
     }
 

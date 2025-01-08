@@ -22,6 +22,14 @@ pub type CompiledExpressionND = fn(*const f64, usize) -> f64;
 /// This defines everything that we expect from our data structures that represent mathematical
 /// expressions.
 pub trait Expression: ExpressionCompiler {
+    /// # Evaluate
+    /// Run the expression with the given variables and return the result.
+    ///
+    /// ## Warning - slow
+    /// If performance is critical, please consider compiling the expression with the `compile`
+    /// function and calling the compiled function directly.
+    fn evaluate(&self, variables: &Vec<f64>) -> f64;
+
     /// # Number of variables
     /// Get the number of independent variables in the expression. This can be easily figured out
     /// by the maximum index of the variables in the expression.
