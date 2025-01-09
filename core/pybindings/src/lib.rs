@@ -1,7 +1,8 @@
 use pyo3::prelude::*;
 
-use oxphys_numerics::enums::{
-    binary_node::BinaryNode, expr::Expr, leaf_node::LeafNode, unary_node::UnaryNode,
+use oxphys_numerics::{
+    enums::{binary_node::BinaryNode, expr::Expr, leaf_node::LeafNode, unary_node::UnaryNode},
+    traits::expression::Expression,
 };
 
 #[pyclass]
@@ -12,6 +13,23 @@ pub struct PyExpr {
 
 #[pymethods]
 impl PyExpr {
+    /// # Evaluate vec
+    /// Compile the expression and pass in a vector of values to evaluate the expression.
+    pub fn evaluate_vec(&self, variables: Vec<Vec<f64>>) -> Vec<f64> {
+        // Jit-compile the expression.
+        let f = self.inner.compile_nd().unwrap();
+
+        // Create an output vector of the same length as the input vectors.
+        let mut output = vec![0.0; variables[0].len()];
+
+        // Evaluate the expression on each set of input values.
+        for (i, values) in variables.iter().enumerate() {
+            output[i] = f(values.as_ptr(), values.len());
+        }
+
+        output
+    }
+
     // Simple constructors for leaf nodes.
     #[staticmethod]
     pub fn constant(value: f64) -> Self {
