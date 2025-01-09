@@ -14,22 +14,29 @@ pub struct PyExpr {
 #[pymethods]
 impl PyExpr {
     /// # Evaluate vec
-    /// Compile the expression and pass in a vector of values to evaluate the expression.
-    pub fn evaluate_vec(&self, variables: Vec<Vec<f64>>) -> Vec<f64> {
+    /// Compile the expression and pass in a NumPy array of values to evaluate the expression.
+    pub fn evaluate_vec<'py>(
+        &self,
+        py: Python<'py>,
+        variables: &PyArray2<f64>,
+    ) -> &'py PyArray1<f64> {
         // Jit-compile the expression.
         let f = self.inner.compile_nd().unwrap();
 
-        // Create an output vector of the same length as the input vectors.
-        let mut output = vec![0.0; variables[0].len()];
+        // Get the number of rows and columns in the input array.
+        let (rows, cols) = variables.dims();
+
+        // Create an output array of the same length as the number of rows in the input array.
+        let output = PyArray1::zeros(py, rows, false);
 
         // Evaluate the expression on each set of input values.
-        for (i, values) in variables.iter().enumerate() {
-            output[i] = f(values.as_ptr(), values.len());
+        for i in 0..rows {
+            let values = variables.slice(s![i, ..]);
+            output.as_slice_mut().unwrap()[i] = f(values.as_ptr(), cols);
         }
 
         output
     }
-
     // Simple constructors for leaf nodes.
     #[staticmethod]
     pub fn constant(value: f64) -> Self {

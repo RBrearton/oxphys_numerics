@@ -10,4 +10,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = ">=0.21.0"
+numpy = ">=0.23.0"
 oxphys_numerics = { path = "../oxphys_numerics" }

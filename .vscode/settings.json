@@ -18,6 +18,7 @@
     "libcall",
     "maturin",
     "ndarray",
+    "numpy",
     "oxphys",
     "prefactor",
     "pybindings",
