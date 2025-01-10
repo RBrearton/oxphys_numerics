@@ -19,6 +19,7 @@ impl PyExpr {
         &self,
         py: Python<'py>,
         variables: &PyArray2<f64>,
+        parallel: bool,
     ) -> &'py PyArray1<f64> {
         // Jit-compile the expression.
         let f = self.inner.compile_nd().unwrap();
@@ -29,12 +30,21 @@ impl PyExpr {
         // Create an output array of the same length as the number of rows in the input array.
         let output = PyArray1::zeros(py, rows, false);
 
-        // Evaluate the expression on each set of input values.
+        // If we're running in parallel, then use rayon to evaluate the expression in parallel.
+        if parallel {
+            let output = output.as_slice_mut().unwrap();
+            output.par_iter_mut().enumerate().for_each(|(i, value)| {
+                let values = variables.slice(s![i, ..]);
+                *value = f(values.as_ptr(), cols);
+            });
+            return output;
+        }
+
+        // Otherwise, evaluate the expression sequentially.
         for i in 0..rows {
             let values = variables.slice(s![i, ..]);
             output.as_slice_mut().unwrap()[i] = f(values.as_ptr(), cols);
         }
-
         output
     }
     // Simple constructors for leaf nodes.
