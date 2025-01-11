@@ -6,7 +6,7 @@ operator to allow for the syntax `expr1 + expr2` to be used to create an `Add` e
 """
 
 import abc
-from typing import TYPE_CHECKING, Self, Union, overload
+from typing import TYPE_CHECKING, Any, Self, Union, overload
 
 import numpy as np
 import oxphys_numerics_rs as rs
@@ -74,7 +74,7 @@ class Expr(abc.ABC):
 
     def __init__(self) -> None:
         """Initialise a new expression."""
-        self._rs_expr = self._build_rust_expr()
+        self._rs_expr = None
 
     def __add__(self, other: ExprCastable) -> "Add":
         """Add two expressions together.
@@ -200,6 +200,10 @@ class Expr(abc.ABC):
         **kwargs: NumLike | ArrayLike,
     ) -> "float | np.ndarray | pd.DataFrame | pl.DataFrame":
         """Evaluate the expression."""
+        # Make sure that the underlying rust expression is built.
+        if self._rs_expr is None:
+            self._rs_expr = self._build_rust_expr([])
+
         # If we were given a pandas DataFrame, convert it to polars.
         if isinstance(data, pd.DataFrame):
             data = pl.from_pandas(data)
@@ -266,7 +270,7 @@ class Expr(abc.ABC):
         """Return a list of all the children of the expression."""
 
     @abc.abstractmethod
-    def _build_rust_expr(self):  # noqa: ANN202
+    def _build_rust_expr(self, variable_names: list[str]):  # noqa: ANN202
         """Build the rust expression from the python expression.
 
         This method must be implemented by all expressions to allow for the construction of the
@@ -274,6 +278,11 @@ class Expr(abc.ABC):
         know the type of the rust expression using python static type checkers.
 
         This must return an instance of _RustExpr.
+
+        Args:
+            variable_names: The variable names that we've found so far while building the
+                expression. This is used to decide where each parameter should go where in the
+                compiled expression.
         """
 
 
@@ -316,7 +325,8 @@ class Constant(Leaf):
     def variables(self) -> list["Variable"]:
         return []
 
-    def _build_rust_expr(self):  # noqa: ANN202
+    def _build_rust_expr(self, variable_names: list[str]):  # noqa: ANN202
+        del variable_names  # We don't need this for constants.
         return _RustExpr.constant(self.value)
 
 
@@ -365,8 +375,17 @@ class Variable(Leaf):
     def variables(self) -> list["Variable"]:
         return [self]
 
-    def _build_rust_expr(self):  # noqa: ANN202
-        return _RustExpr.variable(self._name)
+    def _build_rust_expr(self, variable_names: list[str]):  # noqa: ANN202
+        # If we haven't seen a variable with this variable name so far, add it to the list of
+        # parameter names.
+        if self._name not in variable_names:
+            variable_names.append(self._name)
+
+        # Now find the index of the parameter.
+        index = variable_names.index(self._name)
+
+        # This index is what we need to build the rust expression.
+        return _RustExpr.parameter(index)
 
 
 # endregion
@@ -395,8 +414,12 @@ class Negate(Unary):
     def to_latex(self) -> str:
         return f"-{self._expr.to_latex()}"
 
-    def _build_rust_expr(self):  # noqa: ANN202
-        return _RustExpr.negate(self._expr._rs_expr)  # noqa: SLF001
+    def _build_rust_expr(self, variable_names: list[str]):  # noqa: ANN202
+        # Make the inner expression.
+        _inner_rs_expr = self._expr._build_rust_expr(variable_names)  # noqa: SLF001
+
+        # Negate the inner expression.
+        return _RustExpr.negate(_inner_rs_expr)
 
 
 class Sqrt(Unary):
@@ -405,8 +428,12 @@ class Sqrt(Unary):
     def to_latex(self) -> str:
         return R"\sqrt{" + self._expr.to_latex() + "}"
 
-    def _build_rust_expr(self):  # noqa: ANN202
-        return _RustExpr.sqrt(self._expr._rs_expr)  # noqa: SLF001
+    def _build_rust_expr(self, variable_names: list[str]):  # noqa: ANN202
+        # Make the inner expression.
+        _inner_rs_expr = self._expr._build_rust_expr(variable_names)  # noqa: SLF001
+
+        # Take the square root of the inner expression.
+        return _RustExpr.sqrt(_inner_rs_expr)
 
 
 class Sin(Unary):
@@ -415,8 +442,12 @@ class Sin(Unary):
     def to_latex(self) -> str:
         return R"\sin{ \left(" + self._expr.to_latex() + R"\right) }"
 
-    def _build_rust_expr(self):  # noqa: ANN202
-        return _RustExpr.sin(self._expr._rs_expr)  # noqa: SLF001
+    def _build_rust_expr(self, variable_names: list[str]):  # noqa: ANN202
+        # Make the inner expression.
+        _inner_rs_expr = self._expr._build_rust_expr(variable_names)  # noqa: SLF001
+
+        # Take the sine of the inner expression.
+        return _RustExpr.sin(_inner_rs_expr)
 
 
 class Cos(Unary):
@@ -425,8 +456,12 @@ class Cos(Unary):
     def to_latex(self) -> str:
         return R"\cos{ \left(" + self._expr.to_latex() + R"\right) }"
 
-    def _build_rust_expr(self):  # noqa: ANN202
-        return _RustExpr.cos(self._expr._rs_expr)  # noqa: SLF001
+    def _build_rust_expr(self, variable_names: list[str]):  # noqa: ANN202
+        # Make the inner expression.
+        _inner_rs_expr = self._expr._build_rust_expr(variable_names)  # noqa: SLF001
+
+        # Take the cosine of the inner expression.
+        return _RustExpr.cos(_inner_rs_expr)
 
 
 class Exp(Unary):
@@ -435,8 +470,12 @@ class Exp(Unary):
     def to_latex(self) -> str:
         return R"e^{" + self._expr.to_latex() + "}"
 
-    def _build_rust_expr(self):  # noqa: ANN202
-        return _RustExpr.exp(self._expr._rs_expr)  # noqa: SLF001
+    def _build_rust_expr(self, variable_names: list[str]):  # noqa: ANN202
+        # Make the inner expression.
+        _inner_rs_expr = self._expr._build_rust_expr(variable_names)  # noqa: SLF001
+
+        # Take the exponential of the inner expression.
+        return _RustExpr.exp(_inner_rs_expr)
 
 
 class Ln(Unary):
@@ -445,8 +484,12 @@ class Ln(Unary):
     def to_latex(self) -> str:
         return R"\ln{" + self._expr.to_latex() + "}"
 
-    def _build_rust_expr(self):  # noqa: ANN202
-        return _RustExpr.ln(self._expr._rs_expr)  # noqa: SLF001
+    def _build_rust_expr(self, variable_names: list[str]):  # noqa: ANN202
+        # Make the inner expression.
+        _inner_rs_expr = self._expr._build_rust_expr(variable_names)  # noqa: SLF001
+
+        # Take the natural logarithm of the inner expression.
+        return _RustExpr.ln(_inner_rs_expr)
 
 
 # endregion
@@ -482,8 +525,13 @@ class Add(Binary):
     def to_latex(self) -> str:
         return f"{self._left.to_latex()} + {self._right.to_latex()}"
 
-    def _build_rust_expr(self):  # noqa: ANN202
-        return _RustExpr.add(self._left._rs_expr, self._right._rs_expr)  # noqa: SLF001
+    def _build_rust_expr(self, variable_names: list[str]):  # noqa: ANN202
+        # Make the left and right expressions.
+        _left_rs_expr = self._left._build_rust_expr(variable_names)  # noqa: SLF001
+        _right_rs_expr = self._right._build_rust_expr(variable_names)  # noqa: SLF001
+
+        # Add the left and right expressions.
+        return _RustExpr.add(_left_rs_expr, _right_rs_expr)
 
 
 class Minus(Binary):
@@ -492,8 +540,13 @@ class Minus(Binary):
     def to_latex(self) -> str:
         return f"{self._left.to_latex()} - {self._right.to_latex()}"
 
-    def _build_rust_expr(self):  # noqa: ANN202
-        return _RustExpr.subtract(self._left._rs_expr, self._right._rs_expr)  # noqa: SLF001
+    def _build_rust_expr(self, variable_names: list[str]):  # noqa: ANN202
+        # Make the left and right expressions.
+        _left_rs_expr = self._left._build_rust_expr(variable_names)  # noqa: SLF001
+        _right_rs_expr = self._right._build_rust_expr(variable_names)  # noqa: SLF001
+
+        # Subtract the right expression from the left expression.
+        return _RustExpr.subtract(_left_rs_expr, _right_rs_expr)
 
 
 class Multiply(Binary):
@@ -503,8 +556,13 @@ class Multiply(Binary):
         # Note that we don't put a \times here; I think it leads to an uglier output.
         return f"{self._left.to_latex()} {self._right.to_latex()}"
 
-    def _build_rust_expr(self):  # noqa: ANN202
-        return _RustExpr.multiply(self._left._rs_expr, self._right._rs_expr)  # noqa: SLF001
+    def _build_rust_expr(self, variable_names: list[str]):  # noqa: ANN202
+        # Make the left and right expressions.
+        _left_rs_expr = self._left._build_rust_expr(variable_names)  # noqa: SLF001
+        _right_rs_expr = self._right._build_rust_expr(variable_names)  # noqa: SLF001
+
+        # Multiply the left and right expressions.
+        return _RustExpr.multiply(_left_rs_expr, _right_rs_expr)
 
 
 class Power(Binary):
