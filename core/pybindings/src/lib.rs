@@ -14,6 +14,7 @@ use rayon::iter::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelI
 #[derive(Debug, Clone)]
 pub struct PyExpr {
     pub inner: Expr,
+    compiled_fn: Option<fn(*const f64, usize) -> f64>,
 }
 
 #[pymethods]
@@ -21,13 +22,20 @@ impl PyExpr {
     /// # Evaluate vec
     /// Compile the expression and pass in a NumPy array of values to evaluate the expression.
     pub fn evaluate_vec<'py>(
-        &self,
+        &mut self,
         py: Python<'py>,
         variables: PyReadonlyArray2<f64>,
         parallel: bool,
     ) -> PyResult<Bound<'py, PyArray<f64, Dim<[usize; 1]>>>> {
-        // Jit-compile the expression.
-        let f = self.inner.compile_nd().unwrap();
+        // Jit-compile the expression, if it hasn't been compiled yet.
+        let f = match self.compiled_fn {
+            Some(f) => f,
+            None => {
+                let f = self.inner.compile_nd().unwrap();
+                self.compiled_fn = Some(f);
+                f
+            }
+        };
 
         // Get the number of rows and columns in the input array.
         let dims = variables.dims();
@@ -36,7 +44,10 @@ impl PyExpr {
         // Create an output array of the same length as the number of rows in the input array.
         // This output array can just be a vector of f64s, and we'll deal with the numpy conversion
         // later.
-        let mut output: Vec<f64> = vec![0.0; rows as usize];
+        let mut output = Vec::with_capacity(rows as usize);
+        unsafe {
+            output.set_len(rows as usize);
+        }
 
         // Extract raw data before parallel processing. We need to do this because we can't use
         // a PyArray in a multi-threaded context.
@@ -51,11 +62,10 @@ impl PyExpr {
                 *value = f(row_slice.as_ptr(), cols);
             });
         } else {
-            // Otherwise, we'll just evaluate the expression in a single thread.
-            for i in 0..rows {
+            output.iter_mut().enumerate().for_each(|(i, value)| {
                 let values = variables_array.slice(s![i, ..]);
-                output[i as usize] = f(values.as_ptr(), cols);
-            }
+                *value = f(values.as_ptr(), cols);
+            });
         }
 
         // Now we need to convert the output vector to a numpy array.
@@ -69,6 +79,7 @@ impl PyExpr {
     pub fn constant(value: f64) -> Self {
         PyExpr {
             inner: Expr::Leaf(LeafNode::Constant(value)),
+            compiled_fn: None,
         }
     }
 
@@ -76,6 +87,7 @@ impl PyExpr {
     pub fn variable(index: usize) -> Self {
         PyExpr {
             inner: Expr::Leaf(LeafNode::Variable(index)),
+            compiled_fn: None,
         }
     }
 
@@ -84,6 +96,7 @@ impl PyExpr {
     pub fn negate(child: &PyExpr) -> Self {
         PyExpr {
             inner: Expr::Unary(UnaryNode::Negate(Box::new(child.inner.clone()))),
+            compiled_fn: None,
         }
     }
 
@@ -91,6 +104,7 @@ impl PyExpr {
     pub fn sqrt(child: &PyExpr) -> Self {
         PyExpr {
             inner: Expr::Unary(UnaryNode::Sqrt(Box::new(child.inner.clone()))),
+            compiled_fn: None,
         }
     }
 
@@ -98,6 +112,7 @@ impl PyExpr {
     pub fn sin(child: &PyExpr) -> Self {
         PyExpr {
             inner: Expr::Unary(UnaryNode::Sin(Box::new(child.inner.clone()))),
+            compiled_fn: None,
         }
     }
 
@@ -105,6 +120,7 @@ impl PyExpr {
     pub fn cos(child: &PyExpr) -> Self {
         PyExpr {
             inner: Expr::Unary(UnaryNode::Cos(Box::new(child.inner.clone()))),
+            compiled_fn: None,
         }
     }
 
@@ -112,6 +128,7 @@ impl PyExpr {
     pub fn exp(child: &PyExpr) -> Self {
         PyExpr {
             inner: Expr::Unary(UnaryNode::Exp(Box::new(child.inner.clone()))),
+            compiled_fn: None,
         }
     }
 
@@ -119,6 +136,7 @@ impl PyExpr {
     pub fn ln(child: &PyExpr) -> Self {
         PyExpr {
             inner: Expr::Unary(UnaryNode::Ln(Box::new(child.inner.clone()))),
+            compiled_fn: None,
         }
     }
 
@@ -130,6 +148,7 @@ impl PyExpr {
                 Box::new(left.inner.clone()),
                 Box::new(right.inner.clone()),
             )),
+            compiled_fn: None,
         }
     }
 
@@ -140,6 +159,7 @@ impl PyExpr {
                 Box::new(left.inner.clone()),
                 Box::new(right.inner.clone()),
             )),
+            compiled_fn: None,
         }
     }
 
@@ -150,6 +170,7 @@ impl PyExpr {
                 Box::new(left.inner.clone()),
                 Box::new(right.inner.clone()),
             )),
+            compiled_fn: None,
         }
     }
 
@@ -160,6 +181,7 @@ impl PyExpr {
                 Box::new(numerator.inner.clone()),
                 Box::new(denominator.inner.clone()),
             )),
+            compiled_fn: None,
         }
     }
 
@@ -170,6 +192,7 @@ impl PyExpr {
                 Box::new(base.inner.clone()),
                 Box::new(exponent.inner.clone()),
             )),
+            compiled_fn: None,
         }
     }
 
@@ -180,6 +203,7 @@ impl PyExpr {
                 Box::new(base.inner.clone()),
                 Box::new(argument.inner.clone()),
             )),
+            compiled_fn: None,
         }
     }
 
