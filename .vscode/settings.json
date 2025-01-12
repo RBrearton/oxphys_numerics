@@ -16,6 +16,7 @@
     "fneg",
     "fsub",
     "ipykernel",
+    "ipynb",
     "libcall",
     "maturin",
     "ndarray",
