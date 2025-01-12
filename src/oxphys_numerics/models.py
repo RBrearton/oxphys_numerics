@@ -176,34 +176,53 @@ class Expr(abc.ABC):
         return self.to_latex()
 
     @overload
-    def __call__(self, data: None = None, **kwargs: NumLike) -> float: ...
+    def __call__(self, data: None = None, *, parallel: bool = True, **kwargs: NumLike) -> float: ...
 
     @overload
-    def __call__(self, data: None = None, **kwargs: ArrayLike) -> np.ndarray: ...
+    def __call__(
+        self, data: None = None, *, parallel: bool = True, **kwargs: ArrayLike
+    ) -> np.ndarray: ...
 
     @overload
-    def __call__(self, data: "pd.DataFrame") -> "pd.DataFrame": ...
+    def __call__(
+        self,
+        data: "pd.DataFrame",
+        *,
+        parallel: bool = True,
+    ) -> "pd.DataFrame": ...
 
     @overload
-    def __call__(self, data: "pl.DataFrame") -> "pl.DataFrame": ...
+    def __call__(
+        self,
+        data: "pl.DataFrame",
+        *,
+        parallel: bool = True,
+    ) -> "pl.DataFrame": ...
 
     @overload
-    def __call__(self, data: "dict[VariableId, NumLike]") -> float: ...
+    def __call__(
+        self,
+        data: "dict[VariableId, NumLike]",
+        *,
+        parallel: bool = True,
+    ) -> float: ...
 
     @overload
-    def __call__(self, data: "dict[VariableId, ArrayLike]") -> np.ndarray: ...
+    def __call__(
+        self,
+        data: "dict[VariableId, ArrayLike]",
+        *,
+        parallel: bool = True,
+    ) -> np.ndarray: ...
 
     def __call__(
         self,
         data: ExprCallArg = None,
+        *,
+        parallel: bool = True,
         **kwargs: NumLike | ArrayLike,
     ) -> "float | np.ndarray | pd.DataFrame | pl.DataFrame":
         """Evaluate the expression."""
-        # Make sure that the underlying rust expression is built.
-        if self._rs_expr is None:
-            parameter_list = self._build_rust_parameter_list([])
-            self._rs_expr = self._build_rust_expr(parameter_list)
-
         # If we were given a pandas DataFrame, convert it to polars.
         if isinstance(data, pd.DataFrame):
             data = pl.from_pandas(data)
@@ -229,9 +248,9 @@ class Expr(abc.ABC):
 
         # If execution reaches here, we must have all array-like values. We need the type ignore
         # because type checkers struggle with the above isinstance checks.
-        return self.call_array(data_dict)  # type: ignore
+        return self.call_array(data_dict, parallel)  # type: ignore
 
-    def call_float(self, data: "dict[Variable, NumLike]") -> float:
+    def call_float(self, data: "dict[str | Variable, NumLike]") -> float:
         """Evaluate the expression when each variable has a single value.
 
         This method must be implemented by all expressions to allow for the evaluation of the
@@ -239,13 +258,31 @@ class Expr(abc.ABC):
         """
         raise NotImplementedError
 
-    def call_array(self, data: "dict[Variable, ArrayLike]") -> np.ndarray | float:
+    def call_array(self, data: "dict[str | Variable, ArrayLike]", *, parallel: bool) -> np.ndarray:
         """Evaluate the expression many times; each variable has an array of values.
 
         This method must be implemented by all expressions to allow for the evaluation of the
         expression with a dictionary of arrays.
         """
-        raise NotImplementedError
+        # Make sure that the underlying rust expression is built.
+        if self._rs_expr is None:
+            parameter_list = self._build_rust_parameter_list([])
+            self._rs_expr = self._build_rust_expr(parameter_list)
+
+        # Get the parameter list, so we know what order to expect the variables in.
+        parameter_list = self._build_rust_parameter_list([])
+
+        # Remake the data dict, but keyed by the variable name.
+        data_str_keys = {
+            key.name if isinstance(key, Variable) else key: value for key, value in data.items()
+        }
+
+        # Now we need to build a 2D array of the data, with one column for each variable, where
+        # column 0 is the first variable in the parameter list, column 1 is the second, etc.
+        data_array = np.array([data_str_keys[var] for var in parameter_list]).T
+
+        # Call the evaluate_vec rust method on the rust expression.
+        return self._rs_expr.evaluate_vec(data_array, parallel)  # type: ignore
 
     @abc.abstractmethod
     def to_latex(self) -> str:
@@ -385,6 +422,11 @@ class Variable(Leaf):
         """
         return hash(self._name)
 
+    @property
+    def name(self) -> str:
+        """The name of this variable."""
+        return self._name
+
     def to_latex(self) -> str:
         return self._name
 
@@ -396,7 +438,7 @@ class Variable(Leaf):
         index = parameter_list.index(self._name)
 
         # We need to let the rust expression know what index in the parameter list the variable is.
-        return _RustExpr.parameter(index)
+        return _RustExpr.variable(index)
 
     def _build_rust_parameter_list(self, parameter_list_builder: list[str]) -> list[str]:
         # If the variable isn't already in the list, add it.
