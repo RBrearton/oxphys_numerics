@@ -9,7 +9,8 @@ name = "oxphys_numerics_rs"
 crate-type = ["cdylib"]
 
 [dependencies]
+numpy = { version = "0.23" }
+ndarray = { version = "0.16", features = ["rayon"] }
 pyo3 = ">=0.21.0"
-numpy = ">=0.23.0"
 rayon = ">=1.10.0"
 oxphys_numerics = { path = "../oxphys_numerics" }
