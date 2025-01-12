@@ -248,7 +248,7 @@ class Expr(abc.ABC):
 
         # If execution reaches here, we must have all array-like values. We need the type ignore
         # because type checkers struggle with the above isinstance checks.
-        return self.call_array(data_dict, parallel)  # type: ignore
+        return self.call_array(data_dict, parallel=parallel)  # type: ignore
 
     def call_float(self, data: "dict[str | Variable, NumLike]") -> float:
         """Evaluate the expression when each variable has a single value.
