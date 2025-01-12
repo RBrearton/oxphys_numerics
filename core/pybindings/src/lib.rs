@@ -1,9 +1,14 @@
-use pyo3::prelude::*;
+use numpy::{
+    ndarray::{self, s, Dim},
+    PyArray, PyArray1, PyArrayMethods, PyReadonlyArray2,
+};
+use pyo3::{prelude::*, IntoPyObjectExt};
 
 use oxphys_numerics::{
     enums::{binary_node::BinaryNode, expr::Expr, leaf_node::LeafNode, unary_node::UnaryNode},
     traits::expression::Expression,
 };
+use rayon::iter::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 
 #[pyclass]
 #[derive(Debug, Clone)]
@@ -18,35 +23,47 @@ impl PyExpr {
     pub fn evaluate_vec<'py>(
         &self,
         py: Python<'py>,
-        variables: &PyArray2<f64>,
+        variables: PyReadonlyArray2<f64>,
         parallel: bool,
-    ) -> &'py PyArray1<f64> {
+    ) -> PyResult<Bound<'py, PyArray<f64, Dim<[usize; 1]>>>> {
         // Jit-compile the expression.
         let f = self.inner.compile_nd().unwrap();
 
         // Get the number of rows and columns in the input array.
-        let (rows, cols) = variables.dims();
+        let dims = variables.dims();
+        let (rows, cols) = (dims[0], dims[1]);
 
         // Create an output array of the same length as the number of rows in the input array.
-        let output = PyArray1::zeros(py, rows, false);
+        // This output array can just be a vector of f64s, and we'll deal with the numpy conversion
+        // later.
+        let mut output: Vec<f64> = vec![0.0; rows as usize];
 
-        // If we're running in parallel, then use rayon to evaluate the expression in parallel.
+        // Extract raw data before parallel processing. We need to do this because we can't use
+        // a PyArray in a multi-threaded context.
+        let variables_array = variables.as_array();
+
         if parallel {
-            let output = output.as_slice_mut().unwrap();
+            // If we're running in parallel, we can use Rayon to parallelize the evaluation.
             output.par_iter_mut().enumerate().for_each(|(i, value)| {
-                let values = variables.slice(s![i, ..]);
-                *value = f(values.as_ptr(), cols);
+                // Create slice without referencing PyArray. Instead, we use the variables_array,
+                // which can be safely shared between threads.
+                let row_slice = variables_array.slice(s![i, ..]);
+                *value = f(row_slice.as_ptr(), cols);
             });
-            return output;
+        } else {
+            // Otherwise, we'll just evaluate the expression in a single thread.
+            for i in 0..rows {
+                let values = variables_array.slice(s![i, ..]);
+                output[i as usize] = f(values.as_ptr(), cols);
+            }
         }
 
-        // Otherwise, evaluate the expression sequentially.
-        for i in 0..rows {
-            let values = variables.slice(s![i, ..]);
-            output.as_slice_mut().unwrap()[i] = f(values.as_ptr(), cols);
-        }
-        output
+        // Now we need to convert the output vector to a numpy array.
+        let output_array: Result<Bound<'_, numpy::PyArray<f64, ndarray::Dim<[usize; 1]>>>, PyErr> =
+            PyArray1::from_vec(py, output).into_pyobject_or_pyerr(py);
+        output_array
     }
+
     // Simple constructors for leaf nodes.
     #[staticmethod]
     pub fn constant(value: f64) -> Self {
