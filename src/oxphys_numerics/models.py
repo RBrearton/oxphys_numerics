@@ -6,7 +6,7 @@ operator to allow for the syntax `expr1 + expr2` to be used to create an `Add` e
 """
 
 import abc
-from typing import TYPE_CHECKING, Any, Self, Union, overload
+from typing import TYPE_CHECKING, Self, Union, overload
 
 import numpy as np
 import oxphys_numerics_rs as rs
@@ -384,7 +384,8 @@ class Variable(Leaf):
         # Now find the index of the parameter.
         index = variable_names.index(self._name)
 
-        # This index is what we need to build the rust expression.
+        # This index is what we need to build the rust expression, as we're specifying the index of
+        # the parameter in the compiled expression's parameter list.
         return _RustExpr.parameter(index)
 
 
@@ -589,8 +590,13 @@ class Power(Binary):
     def to_latex(self) -> str:
         return f"{self.base.to_latex()}^{{{self.exponent.to_latex()}}}"
 
-    def _build_rust_expr(self):  # noqa: ANN202
-        return _RustExpr.pow(self.base._rs_expr, self.exponent._rs_expr)  # noqa: SLF001
+    def _build_rust_expr(self, variable_names: list[str]):  # noqa: ANN202
+        # Make the left and right expressions.
+        _left_rs_expr = self.base._build_rust_expr(variable_names)  # noqa: SLF001
+        _right_rs_expr = self.exponent._build_rust_expr(variable_names)  # noqa: SLF001
+
+        # Raise the left expression to the power of the right expression.
+        return _RustExpr.pow(_left_rs_expr, _right_rs_expr)
 
 
 class Log(Binary):
@@ -619,8 +625,13 @@ class Log(Binary):
     def to_latex(self) -> str:
         return R"\log_{" + self.base.to_latex() + R"}{ \left(" + self.arg.to_latex() + R"\right)}"
 
-    def _build_rust_expr(self):  # noqa: ANN202
-        return _RustExpr.log(self.arg._rs_expr, self.base._rs_expr)  # noqa: SLF001
+    def _build_rust_expr(self, variable_names: list[str]):  # noqa: ANN202
+        # Make the left and right expressions.
+        _left_rs_expr = self.arg._build_rust_expr(variable_names)  # noqa: SLF001
+        _right_rs_expr = self.base._build_rust_expr(variable_names)  # noqa: SLF001
+
+        # Take the logarithm of the left expression with the right expression as the base.
+        return _RustExpr.log(_left_rs_expr, _right_rs_expr)
 
 
 class Fraction(Binary):
@@ -649,8 +660,13 @@ class Fraction(Binary):
     def to_latex(self) -> str:
         return R"\frac{" + self._left.to_latex() + "}{" + self._right.to_latex() + "}"
 
-    def _build_rust_expr(self):  # noqa: ANN202
-        return _RustExpr.frac(self.numerator._rs_expr, self.denominator._rs_expr)  # noqa: SLF001
+    def _build_rust_expr(self, variable_names: list[str]):  # noqa: ANN202
+        # Make the left and right expressions.
+        _left_rs_expr = self.numerator._build_rust_expr(variable_names)  # noqa: SLF001
+        _right_rs_expr = self.denominator._build_rust_expr(variable_names)  # noqa: SLF001
+
+        # Divide the left expression by the right expression.
+        return _RustExpr.frac(_left_rs_expr, _right_rs_expr)
 
 
 # endregion
