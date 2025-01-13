@@ -14,3 +14,7 @@ ndarray = { version = "0.16", features = ["rayon"] }
 pyo3 = ">=0.21.0"
 rayon = ">=1.10.0"
 oxphys_numerics = { path = "../oxphys_numerics" }
+
+[profile.release]
+lto = true
+codegen-units = 1
