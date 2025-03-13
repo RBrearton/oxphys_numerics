@@ -3,6 +3,6 @@ members = [
     "core/pybindings",
     "core/oxphys_numerics",
     "apps/benchmarks",
-    "app/micromagnetism",
+    "apps/micromagnetism",
 ]
 resolver = "2"
